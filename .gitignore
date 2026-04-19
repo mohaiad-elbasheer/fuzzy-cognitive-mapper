@@ -6,3 +6,9 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Personal/local files (not for public repo)
+PRIVATE_*.md
+LOCAL_*.md
+my-notes/
+.personal/

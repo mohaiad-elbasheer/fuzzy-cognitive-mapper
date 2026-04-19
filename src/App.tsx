@@ -10,7 +10,7 @@ import {
   useReactFlow,
   getConnectedEdges,
 } from '@xyflow/react';
-import { Brain, Share2, Download, Info, Plus, Play, Layers, Database, LayoutGrid, Table, Sun, Moon, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { Brain, Share2, Download, Info, Plus, Play, Layers, Database, LayoutGrid, Table, Sun, Moon, PanelRightClose, PanelRightOpen, Save, Check, X, Edit3, FlaskConical } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import dagre from 'dagre';
 import Canvas from './components/Canvas';
@@ -20,8 +20,12 @@ import SimulationChart from './components/SimulationChart';
 import DataInspector from './components/DataInspector';
 import MatrixEditor from './components/MatrixEditor';
 import InferenceTab from './components/InferenceTab';
+import ExperimentsTab from './components/ExperimentsTab';
 import FCMNodeComponent from './components/FCMNode';
 import FCMEdgeComponent from './components/FCMEdge';
+import ProjectManager from './components/ProjectManager';
+import FileMenu from './components/FileMenu';
+import { storageService, Project, createEmptyProject } from './lib/storage';
 import { 
   FCMNode, 
   FCMEdge, 
@@ -77,7 +81,7 @@ function Dashboard() {
   const [lambda, setLambda] = useState(1);
   const [simulationResults, setSimulationResults] = useState<SimulationResult[]>([]);
   const [isSimulating, setIsSimulating] = useState(false);
-  const [activeTab, setActiveTab] = useState<'canvas' | 'data' | 'matrix' | 'inference'>('canvas');
+  const [activeTab, setActiveTab] = useState<'canvas' | 'data' | 'matrix' | 'inference' | 'experiments'>('canvas');
   const [theme, setTheme] = useState<'modern' | 'academic'>('modern');
   const [panelHeight, setPanelHeight] = useState(120);
   const [isResizing, setIsResizing] = useState(false);
@@ -88,6 +92,14 @@ function Dashboard() {
   
   // Sidebar collapsed state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Project management state
+  const [currentProject, setCurrentProject] = useState<Project | null>(null);
+  const [projectManagerOpen, setProjectManagerOpen] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
+  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editingNameValue, setEditingNameValue] = useState('');
 
   // Get current linguistic terms based on selected scale
   const currentLinguisticTerms = LINGUISTIC_SCALE_PRESETS[linguisticScale];
@@ -119,6 +131,209 @@ function Dashboard() {
     setNodes(next.nodes);
     setEdges(next.edges);
   }, [future, nodes, edges, setNodes, setEdges]);
+
+  // ============================================================
+  // Project Management
+  // ============================================================
+
+  // Build current project object from state
+  const buildCurrentProject = useCallback((): Project => {
+    const now = new Date().toISOString();
+    const projectNodes = nodes.map(node => ({
+      id: node.id,
+      label: (node.data?.label as string) || 'Untitled',
+      initialActivation: (node.data?.initialActivation as number) ?? 0.5,
+      activation: (node.data?.activation as number) ?? (node.data?.initialActivation as number) ?? 0.5,
+      position: node.position,
+    }));
+    const projectEdges = edges.map(edge => ({
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      weight: (edge.data?.weight as number) ?? 0,
+    }));
+
+    if (currentProject) {
+      return {
+        ...currentProject,
+        nodes: projectNodes,
+        edges: projectEdges,
+        nodeCount: projectNodes.length,
+        edgeCount: projectEdges.length,
+        updatedAt: now,
+        config: {
+          activationFunction: activationFn,
+          lambda,
+          linguisticScale,
+          membershipFunction,
+          theme,
+        },
+      };
+    }
+
+    // Create new project if none exists
+    return {
+      id: `proj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      name: 'Untitled Project',
+      createdAt: now,
+      updatedAt: now,
+      nodeCount: projectNodes.length,
+      edgeCount: projectEdges.length,
+      nodes: projectNodes,
+      edges: projectEdges,
+      config: {
+        activationFunction: activationFn,
+        lambda,
+        linguisticScale,
+        membershipFunction,
+        theme,
+      },
+      version: 1,
+    };
+  }, [nodes, edges, currentProject, activationFn, lambda, linguisticScale, membershipFunction, theme]);
+
+  // Save current project
+  const saveCurrentProject = useCallback(async (): Promise<Project | null> => {
+    setSaveStatus('saving');
+    const project = buildCurrentProject();
+    const result = await storageService.saveProject(project);
+    
+    if (result.success && result.data) {
+      setCurrentProject(result.data);
+      await storageService.setCurrentProjectId(result.data.id);
+      setSaveStatus('saved');
+      setLastSaveTime(new Date());
+      return result.data;
+    } else {
+      setSaveStatus('unsaved');
+      console.error('Failed to save project:', result.error);
+      return null;
+    }
+  }, [buildCurrentProject]);
+
+  // Load project into state
+  const loadProject = useCallback((project: Project) => {
+    // Convert project nodes to React Flow nodes
+    const flowNodes: Node[] = project.nodes.map(node => ({
+      id: node.id,
+      type: 'fcm',
+      position: node.position,
+      data: {
+        label: node.label,
+        initialActivation: node.initialActivation,
+        activation: node.activation,
+      },
+    }));
+
+    // Convert project edges to React Flow edges
+    const flowEdges: Edge[] = project.edges.map(edge => ({
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      type: 'fcm',
+      data: { weight: edge.weight },
+      animated: true,
+    }));
+
+    setNodes(flowNodes);
+    setEdges(flowEdges);
+    setCurrentProject(project);
+
+    // Restore config if available
+    if (project.config) {
+      setActivationFn(project.config.activationFunction);
+      setLambda(project.config.lambda);
+      setLinguisticScale(project.config.linguisticScale);
+      setMembershipFunction(project.config.membershipFunction);
+      setTheme(project.config.theme);
+    }
+
+    // Clear simulation results when loading new project
+    setSimulationResults([]);
+    setSaveStatus('saved');
+    setLastSaveTime(new Date());
+  }, [setNodes, setEdges]);
+
+  // Create new empty project
+  const createNewProject = useCallback(() => {
+    const emptyProject = createEmptyProject();
+    setNodes([]);
+    setEdges([]);
+    setCurrentProject(emptyProject);
+    setSimulationResults([]);
+    setSaveStatus('unsaved');
+    // Auto-save the new project immediately
+    storageService.saveProject(emptyProject).then(result => {
+      if (result.success && result.data) {
+        setCurrentProject(result.data);
+        storageService.setCurrentProjectId(result.data.id);
+        setSaveStatus('saved');
+      }
+    });
+  }, [setNodes, setEdges]);
+
+  // Load last project on startup
+  useEffect(() => {
+    const loadLastProject = async () => {
+      const result = await storageService.loadCurrentProject();
+      if (result.success && result.data) {
+        loadProject(result.data);
+      } else {
+        // No existing project, create one from initial nodes/edges
+        const initialProject = buildCurrentProject();
+        const saveResult = await storageService.saveProject(initialProject);
+        if (saveResult.success && saveResult.data) {
+          setCurrentProject(saveResult.data);
+          await storageService.setCurrentProjectId(saveResult.data.id);
+        }
+      }
+    };
+    loadLastProject();
+  }, []); // Only run on mount
+
+  // Auto-save when nodes/edges change (debounced)
+  useEffect(() => {
+    if (!currentProject) return;
+    
+    setSaveStatus('unsaved');
+    const project = buildCurrentProject();
+    storageService.scheduleAutoSave(project);
+    
+    // Update save status when auto-save completes
+    const unsubscribe = storageService.onSave(() => {
+      setSaveStatus('saved');
+      setLastSaveTime(new Date());
+    });
+    
+    return () => unsubscribe();
+  }, [nodes, edges, activationFn, lambda, linguisticScale, membershipFunction, theme]);
+
+  // Rename project
+  const renameProject = useCallback(async (newName: string) => {
+    if (!currentProject || !newName.trim()) return;
+    
+    const updatedProject = { ...currentProject, name: newName.trim() };
+    const result = await storageService.saveProject(updatedProject);
+    if (result.success && result.data) {
+      setCurrentProject(result.data);
+    }
+    setIsEditingName(false);
+  }, [currentProject]);
+
+  // Export current project to file
+  const exportProject = useCallback(() => {
+    if (!currentProject) return;
+    const project = buildCurrentProject();
+    storageService.exportToFile(project);
+  }, [currentProject, buildCurrentProject]);
+
+  // Import project from file
+  const importProjectFile = useCallback(async (file: File) => {
+    const result = await storageService.importFromFile(file);
+    if (result.success && result.data) {
+      loadProject(result.data);
+    }
+  }, [loadProject]);
 
   const copy = useCallback(() => {
     const selectedNodes = nodes.filter((n) => n.selected);
@@ -528,141 +743,185 @@ function Dashboard() {
     )}>
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 relative">
-        {/* Cyberpunk Header */}
+        {/* Responsive Header - Using CSS Grid for reliable layout */}
         <header className={cn(
-          "h-20 backdrop-blur-xl border-b flex items-center justify-between px-10 z-20 transition-colors duration-500",
+          "h-14 sm:h-16 md:h-20 backdrop-blur-xl border-b z-20 transition-colors duration-500",
+          "grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:gap-3 md:gap-4 px-2 sm:px-4 md:px-6 lg:px-8",
           theme === 'modern' ? "bg-[#0a0a14]/80 border-white/5" : "bg-white border-slate-200 shadow-sm"
         )}>
-          <div className="flex items-center gap-5">
+          {/* Left: Logo (fixed width) */}
+          <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
             <motion.div 
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               className={cn(
-                "w-12 h-12 rounded-2xl flex items-center justify-center border transition-all duration-500",
+                "w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center border transition-all duration-500 shrink-0",
                 theme === 'modern' ? "bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]" : "bg-emerald-50 border-emerald-200"
               )}
             >
-              <Brain className={cn("w-7 h-7", theme === 'modern' ? "text-emerald-400" : "text-emerald-600")} />
+              <Brain className={cn("w-5 h-5 sm:w-5 sm:h-5 md:w-6 md:h-6", theme === 'modern' ? "text-emerald-400" : "text-emerald-600")} />
             </motion.div>
-            <div>
+            <div className="hidden md:block">
               <h1 className={cn(
-                "text-xl font-black tracking-tighter transition-colors duration-500",
+                "text-base lg:text-lg font-black tracking-tighter transition-colors duration-500 whitespace-nowrap",
                 theme === 'modern' ? "text-white" : "text-slate-900"
-              )}>FuzzyCognitiveMapper</h1>
-              <div className="flex items-center gap-2">
-                <div className={cn(
-                  "w-1.5 h-1.5 rounded-full transition-colors duration-500",
-                  theme === 'modern' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-emerald-600"
-                )} />
-                <p className={cn(
-                  "text-[10px] font-black uppercase tracking-[0.3em] transition-colors duration-500",
-                  theme === 'modern' ? "text-white/40" : "text-slate-400"
-                )}>Neural Inference Engine v2.5</p>
-              </div>
+              )}>
+                <span className="hidden xl:inline">FuzzyCognitiveMapper</span>
+                <span className="xl:hidden">FCM</span>
+              </h1>
             </div>
           </div>
 
-          <div className="flex items-center gap-6">
+          {/* Center: File Menu, Project Name, Tabs (flexible, can shrink) */}
+          <div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4 min-w-0 overflow-hidden">
+            <FileMenu
+              currentProject={currentProject}
+              onNewProject={createNewProject}
+              onOpenProject={loadProject}
+              onSaveProject={saveCurrentProject}
+              onExportProject={exportProject}
+              onImportFile={importProjectFile}
+              theme={theme}
+            />
+            
+            <div className={cn("h-5 w-px", theme === 'modern' ? "bg-white/10" : "bg-slate-200")} />
+            
+            {/* Inline Project Name Editor */}
+            <div className="flex items-center gap-2">
+              {isEditingName ? (
+                <div className="flex items-center gap-1">
+                  <input
+                    autoFocus
+                    value={editingNameValue}
+                    onChange={(e) => setEditingNameValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') renameProject(editingNameValue);
+                      if (e.key === 'Escape') setIsEditingName(false);
+                    }}
+                    onBlur={() => renameProject(editingNameValue)}
+                    className={cn(
+                      "px-2 py-1 text-sm font-medium rounded-lg outline-none max-w-[150px] md:max-w-[200px]",
+                      theme === 'modern'
+                        ? "bg-white/10 text-white border border-emerald-500/50 focus:border-emerald-400"
+                        : "bg-white text-slate-900 border border-emerald-500"
+                    )}
+                  />
+                  <button
+                    onClick={() => renameProject(editingNameValue)}
+                    className={cn(
+                      "p-1 rounded-md transition-colors",
+                      theme === 'modern' ? "text-emerald-400 hover:bg-emerald-500/20" : "text-emerald-600 hover:bg-emerald-50"
+                    )}
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setIsEditingName(false)}
+                    className={cn(
+                      "p-1 rounded-md transition-colors",
+                      theme === 'modern' ? "text-white/40 hover:text-white hover:bg-white/10" : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                    )}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setEditingNameValue(currentProject?.name || 'Untitled Project');
+                    setIsEditingName(true);
+                  }}
+                  className={cn(
+                    "group flex items-center gap-2 px-2 py-1 rounded-lg transition-all max-w-[120px] sm:max-w-[150px] md:max-w-[200px]",
+                    theme === 'modern'
+                      ? "hover:bg-white/5 text-white/80"
+                      : "hover:bg-slate-100 text-slate-700"
+                  )}
+                  title="Click to rename project"
+                >
+                  <span className="text-sm font-medium truncate">
+                    {currentProject?.name || 'Untitled Project'}
+                  </span>
+                  <Edit3 className={cn(
+                    "w-3 h-3 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity",
+                    theme === 'modern' ? "text-white/40" : "text-slate-400"
+                  )} />
+                </button>
+              )}
+              
+              {/* Save Status Indicator */}
+              <div className="flex items-center gap-1.5">
+                <div className={cn(
+                  "w-2 h-2 rounded-full transition-colors",
+                  saveStatus === 'saved' 
+                    ? "bg-emerald-500"
+                    : saveStatus === 'saving'
+                      ? "bg-amber-500 animate-pulse"
+                      : "bg-orange-500"
+                )} />
+                <span className={cn(
+                  "text-[9px] uppercase tracking-widest hidden sm:inline",
+                  theme === 'modern' ? "text-white/30" : "text-slate-400"
+                )}>
+                  {saveStatus === 'saved' ? 'Saved' : saveStatus === 'saving' ? 'Saving...' : 'Unsaved'}
+                </span>
+              </div>
+            </div>
+            
+            {/* Tabs */}
             <div className={cn(
-              "flex p-1 rounded-xl border transition-colors duration-500",
+              "flex p-0.5 rounded-lg border transition-colors duration-500 shrink-0",
               theme === 'modern' ? "bg-white/5 border-white/10" : "bg-slate-100 border-slate-200"
             )}>
-              <button 
-                onClick={() => setActiveTab('canvas')}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
-                  activeTab === 'canvas' 
-                    ? (theme === 'modern' ? "bg-white/10 text-emerald-400 shadow-sm" : "bg-white text-emerald-600 shadow-sm border border-slate-200")
-                    : (theme === 'modern' ? "text-white/40 hover:text-white/60" : "text-slate-400 hover:text-slate-600")
-                )}
-              >
-                <Layers className="w-3.5 h-3.5" />
-                Canvas
-              </button>
-              <button 
-                onClick={() => setActiveTab('data')}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
-                  activeTab === 'data' 
-                    ? (theme === 'modern' ? "bg-white/10 text-emerald-400 shadow-sm" : "bg-white text-emerald-600 shadow-sm border border-slate-200")
-                    : (theme === 'modern' ? "text-white/40 hover:text-white/60" : "text-slate-400 hover:text-slate-600")
-                )}
-              >
-                <Database className="w-3.5 h-3.5" />
-                Data
-              </button>
-              <button 
-                onClick={() => setActiveTab('matrix')}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
-                  activeTab === 'matrix' 
-                    ? (theme === 'modern' ? "bg-white/10 text-emerald-400 shadow-sm" : "bg-white text-emerald-600 shadow-sm border border-slate-200")
-                    : (theme === 'modern' ? "text-white/40 hover:text-white/60" : "text-slate-400 hover:text-slate-600")
-                )}
-              >
-                <Table className="w-3.5 h-3.5" />
-                Matrix
-              </button>
-              <button 
-                onClick={() => setActiveTab('inference')}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
-                  activeTab === 'inference' 
-                    ? (theme === 'modern' ? "bg-white/10 text-emerald-400 shadow-sm" : "bg-white text-emerald-600 shadow-sm border border-slate-200")
-                    : (theme === 'modern' ? "text-white/40 hover:text-white/60" : "text-slate-400 hover:text-slate-600")
-                )}
-              >
-                <Brain className="w-3.5 h-3.5" />
-                Inference
-              </button>
+              {[
+                { id: 'canvas', icon: Layers, label: 'Canvas' },
+                { id: 'data', icon: Database, label: 'Data' },
+                { id: 'matrix', icon: Table, label: 'Matrix' },
+                { id: 'inference', icon: Brain, label: 'Inference' },
+                { id: 'experiments', icon: FlaskConical, label: 'Experiments' },
+              ].map(({ id, icon: Icon, label }) => (
+                <button 
+                  key={id}
+                  onClick={() => setActiveTab(id as typeof activeTab)}
+                  className={cn(
+                    "flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-md text-[9px] font-black uppercase tracking-wider transition-all",
+                    activeTab === id 
+                      ? (theme === 'modern' ? "bg-white/10 text-emerald-400" : "bg-white text-emerald-600 shadow-sm")
+                      : (theme === 'modern' ? "text-white/40 hover:text-white/60" : "text-slate-400 hover:text-slate-600")
+                  )}
+                  title={label}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span className="hidden lg:inline">{label}</span>
+                </button>
+              ))}
             </div>
+          </div>
 
-            <div className={cn("h-8 w-px mx-2 transition-colors duration-500", theme === 'modern' ? "bg-white/5" : "bg-slate-200")} />
-
+          {/* Right: Theme toggle & Actions (fixed width) */}
+          <div className="flex items-center gap-1 sm:gap-2">
             {/* Theme Toggle */}
             <button
               onClick={() => setTheme(t => t === 'modern' ? 'academic' : 'modern')}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-xl border transition-all duration-500",
+                "p-2 rounded-lg border transition-all duration-500",
                 theme === 'modern' ? "bg-white/5 border-white/10 text-white/60 hover:bg-white/10" : "bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200"
               )}
+              title={theme === 'modern' ? 'Switch to Academic Mode' : 'Switch to Modern Mode'}
             >
               {theme === 'modern' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              <span className="text-[10px] font-black uppercase tracking-widest">
-                {theme === 'modern' ? 'Academic Mode' : 'Modern Mode'}
-              </span>
             </button>
-
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={reorganizeTopology}
-                className={cn(
-                  "p-2.5 rounded-xl transition-all border group relative",
-                  theme === 'modern' ? "text-white/20 hover:text-emerald-400 hover:bg-emerald-500/5 border-transparent hover:border-emerald-500/20" : "text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 border-transparent hover:border-emerald-200"
-                )}
-                title="Reorganize Topology"
-              >
-                <LayoutGrid className="w-5 h-5" />
-                <span className={cn(
-                  "absolute -bottom-10 left-1/2 -translate-x-1/2 px-2 py-1 text-[8px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border",
-                  theme === 'modern' ? "bg-black/80 text-white border-white/10" : "bg-white text-slate-900 border-slate-200 shadow-lg"
-                )}>
-                  REORGANIZE TOPOLOGY
-                </span>
-              </button>
-              <button className={cn(
-                "p-2.5 rounded-xl transition-all border",
-                theme === 'modern' ? "text-white/20 hover:text-emerald-400 hover:bg-emerald-500/5 border-transparent hover:border-emerald-500/20" : "text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 border-transparent hover:border-emerald-200"
-              )}>
-                <Share2 className="w-5 h-5" />
-              </button>
-              <button className={cn(
-                "p-2.5 rounded-xl transition-all border",
-                theme === 'modern' ? "text-white/20 hover:text-emerald-400 hover:bg-emerald-500/5 border-transparent hover:border-emerald-500/20" : "text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 border-transparent hover:border-emerald-200"
-              )}>
-                <Download className="w-5 h-5" />
-              </button>
-            </div>
+            
+            <button 
+              onClick={reorganizeTopology}
+              className={cn(
+                "p-2 rounded-lg transition-all border hidden sm:flex",
+                theme === 'modern' ? "text-white/30 hover:text-emerald-400 hover:bg-emerald-500/10 border-transparent hover:border-emerald-500/20" : "text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 border-transparent hover:border-emerald-200"
+              )}
+              title="Reorganize Topology"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
           </div>
         </header>
 
@@ -699,6 +958,13 @@ function Dashboard() {
                 nodes={fcmNodes}
                 edges={fcmEdges}
                 results={simulationResults}
+                theme={theme}
+              />
+            ) : activeTab === 'experiments' ? (
+              <ExperimentsTab
+                nodes={fcmNodes}
+                edges={fcmEdges}
+                onRunSimulation={handleRunSimulation}
                 theme={theme}
               />
             ) : (
@@ -945,6 +1211,17 @@ function Dashboard() {
           theme={theme}
         />
       </motion.div>
+
+      {/* Project Manager Modal */}
+      <ProjectManager
+        isOpen={projectManagerOpen}
+        onClose={() => setProjectManagerOpen(false)}
+        currentProject={currentProject}
+        onLoadProject={loadProject}
+        onNewProject={createNewProject}
+        onSaveCurrentProject={saveCurrentProject}
+        theme={theme}
+      />
     </div>
   );
 }

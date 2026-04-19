@@ -7,7 +7,7 @@ This guide will walk you through deploying your Fuzzy Cognitive Mapper to GitHub
 ## Prerequisites
 
 Before starting, you need:
-1. A **GitHub account** (free) - Create one at [github.com](https://github.com)
+1. A **GitHub account** (free) - Create one at [github.com](https:/tt/github.com)
 2. **Git installed** on your computer
 
 ### Installing Git
