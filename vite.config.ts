@@ -1,17 +1,13 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import {defineConfig, loadEnv} from 'vite';
+import {defineConfig} from 'vite';
 
 export default defineConfig(({mode}) => {
-  const env = loadEnv(mode, '.', '');
   return {
     // Base path for GitHub Pages - change 'fuzzy-cognitive-mapper' to your repo name
     base: mode === 'production' ? '/fuzzy-cognitive-mapper/' : '/',
     plugins: [react(), tailwindcss()],
-    define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
@@ -32,10 +28,21 @@ export default defineConfig(({mode}) => {
       minify: 'esbuild',
       rollupOptions: {
         output: {
-          manualChunks: {
-            vendor: ['react', 'react-dom'],
-            flow: ['@xyflow/react', 'dagre'],
-            charts: ['recharts'],
+          // Function form so every module of a package (including internals
+          // like react/jsx-runtime) lands in the intended chunk; the object
+          // form previously produced an empty "vendor" chunk.
+          manualChunks(id: string) {
+            if (!id.includes('node_modules')) return undefined;
+            if (id.includes('recharts') || id.includes('/d3-') || id.includes('victory')) {
+              return 'charts';
+            }
+            if (id.includes('@xyflow') || id.includes('dagre')) {
+              return 'flow';
+            }
+            if (id.includes('lucide-react') || id.includes('motion')) {
+              return 'ui';
+            }
+            return 'vendor';
           },
         },
       },

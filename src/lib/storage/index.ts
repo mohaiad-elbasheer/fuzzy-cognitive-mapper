@@ -21,3 +21,4 @@
 export * from './types';
 export * from './storageService';
 export { localStorageProvider } from './localStorageProvider';
+export { indexedDbProvider } from './indexedDbProvider';

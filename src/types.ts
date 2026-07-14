@@ -14,6 +14,8 @@ export interface FCMNode {
   label: string;
   activation: number;
   initialActivation: number;
+  /** Scenario mode: hold this concept at its initial activation during simulation */
+  clamped?: boolean;
   x?: number;
   y?: number;
   semanticStates?: SemanticState[];
@@ -215,6 +217,17 @@ export interface RuleBasedFCMNode extends FCMNode {
 }
 
 /**
+ * Structured result of a simulation engine run.
+ * Mirrors SimulationOutcome in logic/fcmEngine.ts; declared here so the
+ * engine interface has no dependency on a concrete implementation.
+ */
+export interface FCMEngineOutcome {
+  steps: SimulationResult[];
+  converged: boolean;
+  iterations: number;
+}
+
+/**
  * Simulation Engine Interface - Implement this for custom FCM variants
  * This allows plugging in different inference algorithms
  */
@@ -223,5 +236,5 @@ export interface FCMSimulationEngine {
     nodes: FCMNode[],
     edges: FCMEdge[],
     config: FCMModelConfig
-  ): SimulationResult[];
+  ): FCMEngineOutcome;
 }

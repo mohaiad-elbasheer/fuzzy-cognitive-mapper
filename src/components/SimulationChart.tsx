@@ -54,6 +54,13 @@ const SimulationChart: React.FC<SimulationChartProps> = ({ data, nodes, theme = 
     '#ec4899', '#06b6d4', '#f97316', '#14b8a6', '#6366f1'
   ];
 
+  // tanh/trivalent activations can be negative; widen the axis when needed
+  const hasNegative = data.some(step =>
+    nodes.some(node => (step[node.id] ?? 0) < 0)
+  );
+  const yDomain: [number, number] = hasNegative ? [-1, 1] : [0, 1];
+  const yTicks = hasNegative ? [-1, -0.5, 0, 0.5, 1] : [0, 0.5, 1];
+
   return (
     <div className={cn(
       "h-full w-full p-6 rounded-2xl border shadow-2xl transition-all duration-500",
@@ -96,7 +103,7 @@ const SimulationChart: React.FC<SimulationChartProps> = ({ data, nodes, theme = 
           "absolute -left-8 top-1/2 -translate-y-1/2 -rotate-90 text-[8px] font-black uppercase tracking-[0.4em] pointer-events-none transition-colors duration-500",
           theme === 'modern' ? "text-white/10" : "text-slate-300"
         )}>
-          Activation Level (0.0 - 1.0)
+          Activation Level ({hasNegative ? '-1.0 - 1.0' : '0.0 - 1.0'})
         </div>
         <div className={cn(
           "absolute -bottom-4 left-1/2 -translate-x-1/2 text-[8px] font-black uppercase tracking-[0.4em] pointer-events-none transition-colors duration-500",
@@ -124,7 +131,7 @@ const SimulationChart: React.FC<SimulationChartProps> = ({ data, nodes, theme = 
               dy={10}
             />
             <YAxis 
-              domain={[0, 1]} 
+              domain={yDomain} 
               axisLine={false} 
               tickLine={false} 
               tick={{ 
@@ -133,7 +140,7 @@ const SimulationChart: React.FC<SimulationChartProps> = ({ data, nodes, theme = 
                 fontWeight: 700 
               }}
               dx={-10}
-              ticks={[0, 0.5, 1]}
+              ticks={yTicks}
             />
             <Tooltip 
               contentStyle={{ 

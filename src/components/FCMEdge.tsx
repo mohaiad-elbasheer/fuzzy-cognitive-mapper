@@ -28,7 +28,6 @@ export default function FCMEdge({
   style = {},
   markerEnd,
   data,
-  animated,
 }: EdgeProps) {
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
@@ -68,8 +67,7 @@ export default function FCMEdge({
           stroke: color,
           strokeWidth: 1 + absWeight * 4,
           opacity: theme === 'modern' ? (0.2 + absWeight * 0.6) : (0.4 + absWeight * 0.6),
-        }} 
-        animated={isExporting ? false : animated}
+        }}
       />
       <EdgeLabelRenderer>
         <div

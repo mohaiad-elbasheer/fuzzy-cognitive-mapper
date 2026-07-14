@@ -289,7 +289,7 @@ const InferenceTab: React.FC<InferenceTabProps> = ({ nodes, edges, results, them
                 {analysis.nodeChanges.some(n => n.trend === 'down') ? (
                   <>
                     "To mitigate the decline in <span className={cn("font-black not-italic", theme === 'modern' ? "text-white" : "text-slate-900")}>{analysis.nodeChanges.find(n => n.trend === 'down')?.label}</span>, 
-                    consider reversing or weakening the negative influence from <span className={cn("font-black not-italic", theme === 'modern' ? "text-white" : "text-slate-900")}>{nodes.find(n => edges.find(e => e.target === analysis.nodeChanges.find(nc => nc.trend === 'down')?.id && e.weight < 0)?.source)?.label || 'external factors'}</span>."
+                    consider reversing or weakening the negative influence from <span className={cn("font-black not-italic", theme === 'modern' ? "text-white" : "text-slate-900")}>{nodes.find(n => n.id === edges.find(e => e.target === analysis.nodeChanges.find(nc => nc.trend === 'down')?.id && e.weight < 0)?.source)?.label || 'external factors'}</span>."
                   </>
                 ) : (
                   <>

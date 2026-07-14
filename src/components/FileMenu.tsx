@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   ChevronDown,
   FilePlus,
-  FolderOpen,
   Upload,
   Save,
   Download,

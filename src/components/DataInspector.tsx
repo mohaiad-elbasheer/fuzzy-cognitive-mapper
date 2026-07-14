@@ -60,59 +60,55 @@ const DataInspector: React.FC<DataInspectorProps> = ({
   };
 
   const validateAndParse = (content: string) => {
-    try {
-      const parsed = JSON.parse(content);
-      
-      // Validate structure
-      if (!parsed.concepts || !Array.isArray(parsed.concepts)) {
-        throw new Error('Missing or invalid "concepts" array');
-      }
-      if (!parsed.causalLinks || !Array.isArray(parsed.causalLinks)) {
-        throw new Error('Missing or invalid "causalLinks" array');
-      }
-
-      // Validate concepts
-      const nodeIds = new Set<string>();
-      const newNodes: FCMNode[] = parsed.concepts.map((c: any, i: number) => {
-        if (!c.id) throw new Error(`Concept at index ${i} missing "id"`);
-        if (!c.label) throw new Error(`Concept "${c.id}" missing "label"`);
-        if (nodeIds.has(c.id)) throw new Error(`Duplicate concept id: "${c.id}"`);
-        nodeIds.add(c.id);
-        
-        return {
-          id: c.id,
-          label: c.label,
-          initialActivation: typeof c.initialActivation === 'number' ? c.initialActivation : 0.5,
-          activation: typeof c.activation === 'number' ? c.activation : c.initialActivation || 0.5,
-        };
-      });
-
-      // Validate edges
-      const edgeIds = new Set<string>();
-      const newEdges: FCMEdge[] = parsed.causalLinks.map((e: any, i: number) => {
-        if (!e.source) throw new Error(`Causal link at index ${i} missing "source"`);
-        if (!e.target) throw new Error(`Causal link at index ${i} missing "target"`);
-        if (!nodeIds.has(e.source)) throw new Error(`Causal link references unknown source: "${e.source}"`);
-        if (!nodeIds.has(e.target)) throw new Error(`Causal link references unknown target: "${e.target}"`);
-        
-        const id = e.id || `e${e.source}-${e.target}`;
-        if (edgeIds.has(id)) throw new Error(`Duplicate edge id: "${id}"`);
-        edgeIds.add(id);
-
-        const weight = typeof e.weight === 'number' ? Math.max(-1, Math.min(1, e.weight)) : 0;
-
-        return {
-          id,
-          source: e.source,
-          target: e.target,
-          weight,
-        };
-      });
-
-      return { nodes: newNodes, edges: newEdges };
-    } catch (err) {
-      throw err;
+    const parsed = JSON.parse(content);
+    
+    // Validate structure
+    if (!parsed.concepts || !Array.isArray(parsed.concepts)) {
+      throw new Error('Missing or invalid "concepts" array');
     }
+    if (!parsed.causalLinks || !Array.isArray(parsed.causalLinks)) {
+      throw new Error('Missing or invalid "causalLinks" array');
+    }
+
+    // Validate concepts
+    const nodeIds = new Set<string>();
+    const newNodes: FCMNode[] = parsed.concepts.map((c: any, i: number) => {
+      if (!c.id) throw new Error(`Concept at index ${i} missing "id"`);
+      if (!c.label) throw new Error(`Concept "${c.id}" missing "label"`);
+      if (nodeIds.has(c.id)) throw new Error(`Duplicate concept id: "${c.id}"`);
+      nodeIds.add(c.id);
+      
+      return {
+        id: c.id,
+        label: c.label,
+        initialActivation: typeof c.initialActivation === 'number' ? c.initialActivation : 0.5,
+        activation: typeof c.activation === 'number' ? c.activation : c.initialActivation || 0.5,
+      };
+    });
+
+    // Validate edges
+    const edgeIds = new Set<string>();
+    const newEdges: FCMEdge[] = parsed.causalLinks.map((e: any, i: number) => {
+      if (!e.source) throw new Error(`Causal link at index ${i} missing "source"`);
+      if (!e.target) throw new Error(`Causal link at index ${i} missing "target"`);
+      if (!nodeIds.has(e.source)) throw new Error(`Causal link references unknown source: "${e.source}"`);
+      if (!nodeIds.has(e.target)) throw new Error(`Causal link references unknown target: "${e.target}"`);
+      
+      const id = e.id || `e${e.source}-${e.target}`;
+      if (edgeIds.has(id)) throw new Error(`Duplicate edge id: "${id}"`);
+      edgeIds.add(id);
+
+      const weight = typeof e.weight === 'number' ? Math.max(-1, Math.min(1, e.weight)) : 0;
+
+      return {
+        id,
+        source: e.source,
+        target: e.target,
+        weight,
+      };
+    });
+
+    return { nodes: newNodes, edges: newEdges };
   };
 
   const handleApplyChanges = () => {

@@ -3,7 +3,7 @@
  * Designed for scalability: same types work with localStorage, IndexedDB, or cloud storage
  */
 
-import { FCMNode, FCMEdge, LinguisticScalePreset, MembershipFunctionType, ActivationFunction } from '../../types';
+import { LinguisticScalePreset, MembershipFunctionType, ActivationFunction } from '../../types';
 
 /**
  * Project metadata - lightweight info for project listings
@@ -45,6 +45,8 @@ export interface ProjectNode {
   label: string;
   initialActivation: number;
   activation: number;
+  /** Scenario mode: hold this concept at its initial activation during simulation */
+  clamped?: boolean;
   position: { x: number; y: number };
 }
 
@@ -64,6 +66,10 @@ export interface ProjectEdge {
 export interface ProjectConfig {
   activationFunction: ActivationFunction;
   lambda: number;
+  /** Optional for backwards compatibility with projects saved before v1.1 */
+  maxIterations?: number;
+  /** Optional for backwards compatibility with projects saved before v1.1 */
+  convergenceThreshold?: number;
   linguisticScale: LinguisticScalePreset;
   membershipFunction: MembershipFunctionType;
   theme: 'modern' | 'academic';

@@ -225,7 +225,7 @@ export const compareRuns = (runA: SimulationRun, runB: SimulationRun): Compariso
  */
 export const interpretOutput = (
   value: number,
-  conceptLabel: string
+  _conceptLabel: string
 ): OutputInterpretation => {
   let label: string;
   let level: OutputInterpretation['level'];

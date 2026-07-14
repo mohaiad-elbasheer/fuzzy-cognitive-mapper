@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useMemo, Suspense, lazy } from 'react';
 import {
   useNodesState,
   useEdgesState,
@@ -7,36 +7,40 @@ import {
   Edge,
   Node,
   ReactFlowProvider,
-  useReactFlow,
-  getConnectedEdges,
 } from '@xyflow/react';
-import { Brain, Share2, Download, Info, Plus, Play, Layers, Database, LayoutGrid, Table, Sun, Moon, PanelRightClose, PanelRightOpen, Save, Check, X, Edit3, FlaskConical } from 'lucide-react';
+import { Brain, Plus, Play, Layers, Database, LayoutGrid, Table, Sun, Moon, PanelRightClose, PanelRightOpen, Check, X, Edit3, FlaskConical } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import dagre from 'dagre';
 import Canvas from './components/Canvas';
 import Sidebar from './components/Sidebar';
 import EdgeEditor from './components/EdgeEditor';
-import SimulationChart from './components/SimulationChart';
-import DataInspector from './components/DataInspector';
-import MatrixEditor from './components/MatrixEditor';
-import InferenceTab from './components/InferenceTab';
-import ExperimentsTab from './components/ExperimentsTab';
 import FCMNodeComponent from './components/FCMNode';
 import FCMEdgeComponent from './components/FCMEdge';
 import ProjectManager from './components/ProjectManager';
 import FileMenu from './components/FileMenu';
-import { storageService, Project, createEmptyProject } from './lib/storage';
+import { ProjectConfig } from './lib/storage';
 import { 
   FCMNode, 
   FCMEdge, 
   ActivationFunction, 
-  SimulationResult,
   LinguisticScalePreset,
   MembershipFunctionType,
   LINGUISTIC_SCALE_PRESETS,
 } from './types';
-import { runSimulation } from './logic/fcmEngine';
+import { useGraphHistory } from './hooks/useGraphHistory';
+import { useSelectionActions } from './hooks/useSelectionActions';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { useSimulation } from './hooks/useSimulation';
+import { useProjectPersistence } from './hooks/useProjectPersistence';
 import { cn } from './lib/utils';
+
+// Tab panels are code-split: recharts and the analysis views only load
+// when the user opens a tab that needs them.
+const SimulationChart = lazy(() => import('./components/SimulationChart'));
+const DataInspector = lazy(() => import('./components/DataInspector'));
+const MatrixEditor = lazy(() => import('./components/MatrixEditor'));
+const InferenceTab = lazy(() => import('./components/InferenceTab'));
+const ExperimentsTab = lazy(() => import('./components/ExperimentsTab'));
 
 const nodeTypes = {
   fcm: FCMNodeComponent,
@@ -45,6 +49,15 @@ const nodeTypes = {
 const edgeTypes = {
   fcm: FCMEdgeComponent,
 };
+
+const TabLoading = ({ theme }: { theme: 'modern' | 'academic' }) => (
+  <div className={cn(
+    "h-full w-full flex items-center justify-center text-[10px] font-black uppercase tracking-widest",
+    theme === 'modern' ? "text-white/30" : "text-slate-400"
+  )}>
+    Loading…
+  </div>
+);
 
 const initialNodes: Node[] = [
   { 
@@ -79,8 +92,8 @@ function Dashboard() {
   const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
   const [activationFn, setActivationFn] = useState<ActivationFunction>('sigmoid');
   const [lambda, setLambda] = useState(1);
-  const [simulationResults, setSimulationResults] = useState<SimulationResult[]>([]);
-  const [isSimulating, setIsSimulating] = useState(false);
+  const [maxIterations, setMaxIterations] = useState(25);
+  const [convergenceThreshold, setConvergenceThreshold] = useState(0.001);
   const [activeTab, setActiveTab] = useState<'canvas' | 'data' | 'matrix' | 'inference' | 'experiments'>('canvas');
   const [theme, setTheme] = useState<'modern' | 'academic'>('modern');
   const [panelHeight, setPanelHeight] = useState(120);
@@ -89,325 +102,103 @@ function Dashboard() {
   // Advanced parameters state
   const [linguisticScale, setLinguisticScale] = useState<LinguisticScalePreset>('9-point');
   const [membershipFunction, setMembershipFunction] = useState<MembershipFunctionType>('triangular');
-  
+
   // Sidebar collapsed state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Project management state
-  const [currentProject, setCurrentProject] = useState<Project | null>(null);
+  // Project manager modal + inline rename state
   const [projectManagerOpen, setProjectManagerOpen] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
-  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editingNameValue, setEditingNameValue] = useState('');
 
   // Get current linguistic terms based on selected scale
   const currentLinguisticTerms = LINGUISTIC_SCALE_PRESETS[linguisticScale];
 
-  // History & Clipboard State
-  const [history, setHistory] = useState<{ nodes: Node[]; edges: Edge[] }[]>([]);
-  const [future, setFuture] = useState<{ nodes: Node[]; edges: Edge[] }[]>([]);
-  const [clipboard, setClipboard] = useState<{ nodes: Node[]; edges: Edge[] } | null>(null);
+  // History, clipboard, and keyboard shortcuts
+  const { saveToHistory, undo, redo } = useGraphHistory(nodes, edges, setNodes, setEdges);
+  const { copy, paste, deleteSelected } = useSelectionActions(nodes, edges, setNodes, setEdges, saveToHistory);
+  useKeyboardShortcuts({ undo, redo, copy, paste, deleteSelected });
 
-  const saveToHistory = useCallback(() => {
-    setHistory((prev) => [...prev, { nodes: JSON.parse(JSON.stringify(nodes)), edges: JSON.parse(JSON.stringify(edges)) }].slice(-50));
-    setFuture([]);
-  }, [nodes, edges]);
-
-  const undo = useCallback(() => {
-    if (history.length === 0) return;
-    const previous = history[history.length - 1];
-    setFuture((prev) => [{ nodes: JSON.parse(JSON.stringify(nodes)), edges: JSON.parse(JSON.stringify(edges)) }, ...prev]);
-    setHistory((prev) => prev.slice(0, -1));
-    setNodes(previous.nodes);
-    setEdges(previous.edges);
-  }, [history, nodes, edges, setNodes, setEdges]);
-
-  const redo = useCallback(() => {
-    if (future.length === 0) return;
-    const next = future[0];
-    setHistory((prev) => [...prev, { nodes: JSON.parse(JSON.stringify(nodes)), edges: JSON.parse(JSON.stringify(edges)) }]);
-    setFuture((prev) => prev.slice(1));
-    setNodes(next.nodes);
-    setEdges(next.edges);
-  }, [future, nodes, edges, setNodes, setEdges]);
-
-  // ============================================================
-  // Project Management
-  // ============================================================
-
-  // Build current project object from state
-  const buildCurrentProject = useCallback((): Project => {
-    const now = new Date().toISOString();
-    const projectNodes = nodes.map(node => ({
+  // Engine-facing views of the graph
+  const fcmNodes: FCMNode[] = useMemo(() => {
+    return nodes.map((node) => ({
       id: node.id,
-      label: (node.data?.label as string) || 'Untitled',
-      initialActivation: (node.data?.initialActivation as number) ?? 0.5,
+      label: (node.data?.label as string) || 'New Concept',
       activation: (node.data?.activation as number) ?? (node.data?.initialActivation as number) ?? 0.5,
-      position: node.position,
+      initialActivation: (node.data?.initialActivation as number) ?? 0.5,
+      clamped: (node.data?.clamped as boolean) ?? false,
     }));
-    const projectEdges = edges.map(edge => ({
+  }, [nodes]);
+
+  const fcmEdges: FCMEdge[] = useMemo(() => {
+    return edges.map((edge) => ({
       id: edge.id,
       source: edge.source,
       target: edge.target,
-      weight: (edge.data?.weight as number) ?? 0,
+      weight: (edge.data?.weight as number) || 0,
     }));
+  }, [edges]);
 
-    if (currentProject) {
-      return {
-        ...currentProject,
-        nodes: projectNodes,
-        edges: projectEdges,
-        nodeCount: projectNodes.length,
-        edgeCount: projectEdges.length,
-        updatedAt: now,
-        config: {
-          activationFunction: activationFn,
-          lambda,
-          linguisticScale,
-          membershipFunction,
-          theme,
-        },
-      };
-    }
+  // Simulation lifecycle
+  const {
+    simulation,
+    steps: simulationResults,
+    isSimulating,
+    run: handleRunSimulation,
+    reset: resetSimulation,
+    clear: clearSimulation,
+  } = useSimulation(
+    fcmNodes,
+    fcmEdges,
+    { activationFn, lambda, maxIterations, convergenceThreshold },
+    setNodes
+  );
 
-    // Create new project if none exists
-    return {
-      id: `proj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      name: 'Untitled Project',
-      createdAt: now,
-      updatedAt: now,
-      nodeCount: projectNodes.length,
-      edgeCount: projectEdges.length,
-      nodes: projectNodes,
-      edges: projectEdges,
-      config: {
-        activationFunction: activationFn,
-        lambda,
-        linguisticScale,
-        membershipFunction,
-        theme,
-      },
-      version: 1,
-    };
-  }, [nodes, edges, currentProject, activationFn, lambda, linguisticScale, membershipFunction, theme]);
+  // Project persistence
+  const projectConfig: ProjectConfig = {
+    activationFunction: activationFn,
+    lambda,
+    maxIterations,
+    convergenceThreshold,
+    linguisticScale,
+    membershipFunction,
+    theme,
+  };
 
-  // Save current project
-  const saveCurrentProject = useCallback(async (): Promise<Project | null> => {
-    setSaveStatus('saving');
-    const project = buildCurrentProject();
-    const result = await storageService.saveProject(project);
-    
-    if (result.success && result.data) {
-      setCurrentProject(result.data);
-      await storageService.setCurrentProjectId(result.data.id);
-      setSaveStatus('saved');
-      setLastSaveTime(new Date());
-      return result.data;
-    } else {
-      setSaveStatus('unsaved');
-      console.error('Failed to save project:', result.error);
-      return null;
-    }
-  }, [buildCurrentProject]);
+  const applyConfig = useCallback((config: ProjectConfig) => {
+    setActivationFn(config.activationFunction);
+    setLambda(config.lambda);
+    setMaxIterations(config.maxIterations ?? 25);
+    setConvergenceThreshold(config.convergenceThreshold ?? 0.001);
+    setLinguisticScale(config.linguisticScale);
+    setMembershipFunction(config.membershipFunction);
+    setTheme(config.theme);
+  }, []);
 
-  // Load project into state
-  const loadProject = useCallback((project: Project) => {
-    // Convert project nodes to React Flow nodes
-    const flowNodes: Node[] = project.nodes.map(node => ({
-      id: node.id,
-      type: 'fcm',
-      position: node.position,
-      data: {
-        label: node.label,
-        initialActivation: node.initialActivation,
-        activation: node.activation,
-      },
-    }));
+  const {
+    currentProject,
+    saveStatus,
+    saveCurrentProject,
+    loadProject,
+    createNewProject,
+    renameProject: persistRename,
+    exportProject,
+    importProjectFile,
+  } = useProjectPersistence({
+    nodes,
+    edges,
+    setNodes,
+    setEdges,
+    config: projectConfig,
+    applyConfig,
+    onProjectSwitched: clearSimulation,
+  });
 
-    // Convert project edges to React Flow edges
-    const flowEdges: Edge[] = project.edges.map(edge => ({
-      id: edge.id,
-      source: edge.source,
-      target: edge.target,
-      type: 'fcm',
-      data: { weight: edge.weight },
-      animated: true,
-    }));
-
-    setNodes(flowNodes);
-    setEdges(flowEdges);
-    setCurrentProject(project);
-
-    // Restore config if available
-    if (project.config) {
-      setActivationFn(project.config.activationFunction);
-      setLambda(project.config.lambda);
-      setLinguisticScale(project.config.linguisticScale);
-      setMembershipFunction(project.config.membershipFunction);
-      setTheme(project.config.theme);
-    }
-
-    // Clear simulation results when loading new project
-    setSimulationResults([]);
-    setSaveStatus('saved');
-    setLastSaveTime(new Date());
-  }, [setNodes, setEdges]);
-
-  // Create new empty project
-  const createNewProject = useCallback(() => {
-    const emptyProject = createEmptyProject();
-    setNodes([]);
-    setEdges([]);
-    setCurrentProject(emptyProject);
-    setSimulationResults([]);
-    setSaveStatus('unsaved');
-    // Auto-save the new project immediately
-    storageService.saveProject(emptyProject).then(result => {
-      if (result.success && result.data) {
-        setCurrentProject(result.data);
-        storageService.setCurrentProjectId(result.data.id);
-        setSaveStatus('saved');
-      }
-    });
-  }, [setNodes, setEdges]);
-
-  // Load last project on startup
-  useEffect(() => {
-    const loadLastProject = async () => {
-      const result = await storageService.loadCurrentProject();
-      if (result.success && result.data) {
-        loadProject(result.data);
-      } else {
-        // No existing project, create one from initial nodes/edges
-        const initialProject = buildCurrentProject();
-        const saveResult = await storageService.saveProject(initialProject);
-        if (saveResult.success && saveResult.data) {
-          setCurrentProject(saveResult.data);
-          await storageService.setCurrentProjectId(saveResult.data.id);
-        }
-      }
-    };
-    loadLastProject();
-  }, []); // Only run on mount
-
-  // Auto-save when nodes/edges change (debounced)
-  useEffect(() => {
-    if (!currentProject) return;
-    
-    setSaveStatus('unsaved');
-    const project = buildCurrentProject();
-    storageService.scheduleAutoSave(project);
-    
-    // Update save status when auto-save completes
-    const unsubscribe = storageService.onSave(() => {
-      setSaveStatus('saved');
-      setLastSaveTime(new Date());
-    });
-    
-    return () => unsubscribe();
-  }, [nodes, edges, activationFn, lambda, linguisticScale, membershipFunction, theme]);
-
-  // Rename project
   const renameProject = useCallback(async (newName: string) => {
-    if (!currentProject || !newName.trim()) return;
-    
-    const updatedProject = { ...currentProject, name: newName.trim() };
-    const result = await storageService.saveProject(updatedProject);
-    if (result.success && result.data) {
-      setCurrentProject(result.data);
-    }
+    await persistRename(newName);
     setIsEditingName(false);
-  }, [currentProject]);
+  }, [persistRename]);
 
-  // Export current project to file
-  const exportProject = useCallback(() => {
-    if (!currentProject) return;
-    const project = buildCurrentProject();
-    storageService.exportToFile(project);
-  }, [currentProject, buildCurrentProject]);
-
-  // Import project from file
-  const importProjectFile = useCallback(async (file: File) => {
-    const result = await storageService.importFromFile(file);
-    if (result.success && result.data) {
-      loadProject(result.data);
-    }
-  }, [loadProject]);
-
-  const copy = useCallback(() => {
-    const selectedNodes = nodes.filter((n) => n.selected);
-    const selectedEdges = edges.filter((e) => e.selected || (selectedNodes.some(sn => sn.id === e.source) && selectedNodes.some(sn => sn.id === e.target)));
-    if (selectedNodes.length > 0) {
-      setClipboard({ nodes: selectedNodes, edges: selectedEdges });
-    }
-  }, [nodes, edges]);
-
-  const paste = useCallback(() => {
-    if (!clipboard) return;
-    saveToHistory();
-    const idMap: Record<string, string> = {};
-    const newNodes = clipboard.nodes.map((node) => {
-      const newId = `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      idMap[node.id] = newId;
-      return {
-        ...node,
-        id: newId,
-        position: { x: node.position.x + 40, y: node.position.y + 40 },
-        selected: true,
-      };
-    });
-
-    const newEdges = clipboard.edges.map((edge) => ({
-      ...edge,
-      id: `edge-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      source: idMap[edge.source] || edge.source,
-      target: idMap[edge.target] || edge.target,
-      selected: true,
-    }));
-
-    setNodes((nds) => nds.map(n => ({ ...n, selected: false })).concat(newNodes));
-    setEdges((eds) => eds.map(e => ({ ...e, selected: false })).concat(newEdges));
-  }, [clipboard, saveToHistory, setNodes, setEdges]);
-
-  const deleteSelected = useCallback(() => {
-    const selectedNodes = nodes.filter(n => n.selected);
-    const selectedEdges = edges.filter(e => e.selected);
-    if (selectedNodes.length > 0 || selectedEdges.length > 0) {
-      saveToHistory();
-      setNodes((nds) => nds.filter((n) => !n.selected));
-      setEdges((eds) => eds.filter((e) => !e.selected && !selectedNodes.some(sn => sn.id === e.source || sn.id === e.target)));
-    }
-  }, [nodes, edges, saveToHistory, setNodes, setEdges]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const isCtrl = e.ctrlKey || e.metaKey;
-      
-      if (isCtrl && e.key === 'z') {
-        e.preventDefault();
-        undo();
-      } else if (isCtrl && e.key === 'y') {
-        e.preventDefault();
-        redo();
-      } else if (isCtrl && e.key === 'c') {
-        if (document.activeElement?.tagName !== 'INPUT') {
-          copy();
-        }
-      } else if (isCtrl && e.key === 'v') {
-        if (document.activeElement?.tagName !== 'INPUT') {
-          paste();
-        }
-      } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (document.activeElement?.tagName !== 'INPUT') {
-          deleteSelected();
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [undo, redo, copy, paste, deleteSelected]);
 
   const startResizing = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -446,7 +237,7 @@ function Dashboard() {
         return node;
       })
     );
-  }, [setNodes]);
+  }, [saveToHistory, setNodes]);
 
   const updateEdgeWeightById = useCallback((edgeId: string, weight: number) => {
     saveToHistory();
@@ -458,7 +249,7 @@ function Dashboard() {
         return edge;
       })
     );
-  }, [setEdges]);
+  }, [saveToHistory, setEdges]);
 
   const flipEdge = useCallback((edgeId: string) => {
     saveToHistory();
@@ -474,7 +265,7 @@ function Dashboard() {
         return edge;
       })
     );
-  }, [setEdges]);
+  }, [saveToHistory, setEdges]);
 
   const updateNodeActivation = useCallback((nodeId: string, initialActivation: number) => {
     saveToHistory();
@@ -489,7 +280,7 @@ function Dashboard() {
         return node;
       })
     );
-  }, [setNodes]);
+  }, [saveToHistory, setNodes]);
 
   const reorganizeTopology = useCallback(() => {
     saveToHistory();
@@ -523,18 +314,18 @@ function Dashboard() {
         };
       })
     );
-  }, [nodes, edges, setNodes]);
+  }, [nodes, edges, saveToHistory, setNodes]);
 
   const deleteNode = useCallback((nodeId: string) => {
     saveToHistory();
     setNodes((nds) => nds.filter((n) => n.id !== nodeId));
     setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
-  }, [setNodes, setEdges]);
+  }, [saveToHistory, setNodes, setEdges]);
 
   const deleteEdge = useCallback((edgeId: string) => {
     saveToHistory();
     setEdges((eds) => eds.filter((e) => e.id !== edgeId));
-  }, [setEdges]);
+  }, [saveToHistory, setEdges]);
 
   const nodesWithCallbacks = useMemo(() => {
     return nodes.map((node) => ({
@@ -561,24 +352,6 @@ function Dashboard() {
       },
     }));
   }, [edges, theme, updateEdgeWeightById, flipEdge, deleteEdge]);
-
-  const fcmNodes: FCMNode[] = useMemo(() => {
-    return nodes.map((node) => ({
-      id: node.id,
-      label: (node.data?.label as string) || 'New Concept',
-      activation: (node.data?.activation as number) ?? (node.data?.initialActivation as number) ?? 0.5,
-      initialActivation: (node.data?.initialActivation as number) ?? 0.5,
-    }));
-  }, [nodes]);
-
-  const fcmEdges: FCMEdge[] = useMemo(() => {
-    return edges.map((edge) => ({
-      id: edge.id,
-      source: edge.source,
-      target: edge.target,
-      weight: (edge.data?.weight as number) || 0,
-    }));
-  }, [edges]);
 
   const onConnect = useCallback(
     (params: Connection) => {
@@ -663,7 +436,7 @@ function Dashboard() {
       animated: true,
     };
     setEdges((eds) => addEdge(newEdge, eds));
-  }, [setEdges]);
+  }, [saveToHistory, setEdges]);
 
   const updateEdgeWeight = useCallback((weight: number) => {
     if (!selectedEdge) return;
@@ -677,31 +450,7 @@ function Dashboard() {
       })
     );
     setSelectedEdge((prev) => prev ? { ...prev, data: { ...prev.data, weight } } : null);
-  }, [selectedEdge, setEdges]);
-
-  const handleRunSimulation = () => {
-    setIsSimulating(true);
-    setTimeout(() => {
-      const results = runSimulation(fcmNodes, fcmEdges, activationFn, lambda);
-      setSimulationResults(results);
-      
-      // Sync final results back to nodes for canvas visualization
-      if (results.length > 0) {
-        const finalState = results[results.length - 1];
-        setNodes((nds) => 
-          nds.map(node => ({
-            ...node,
-            data: {
-              ...node.data,
-              activation: finalState[node.id]
-            }
-          }))
-        );
-      }
-      
-      setIsSimulating(false);
-    }, 800);
-  };
+  }, [selectedEdge, saveToHistory, setEdges]);
 
   const handleImportData = useCallback((importedNodes: FCMNode[], importedEdges: FCMEdge[]) => {
     saveToHistory();
@@ -733,8 +482,8 @@ function Dashboard() {
 
     setNodes(newNodes);
     setEdges(newEdges);
-    setSimulationResults([]);
-  }, [saveToHistory, setNodes, setEdges]);
+    clearSimulation();
+  }, [saveToHistory, setNodes, setEdges, clearSimulation]);
 
   return (
     <div className={cn(
@@ -928,6 +677,7 @@ function Dashboard() {
         {/* Workspace Area */}
         <main className="flex-1 flex flex-col relative overflow-hidden min-h-0">
           <div className="flex-1 relative min-h-0 overflow-hidden">
+            <Suspense fallback={<TabLoading theme={theme} />}>
             {activeTab === 'canvas' ? (
               <Canvas
                 nodes={nodesWithCallbacks}
@@ -950,6 +700,7 @@ function Dashboard() {
                 onUpdateNode={updateNodeData}
                 onAddNode={addNode}
                 onDeleteNode={deleteNode}
+                onImportData={handleImportData}
                 linguisticTerms={currentLinguisticTerms}
                 theme={theme}
               />
@@ -964,7 +715,6 @@ function Dashboard() {
               <ExperimentsTab
                 nodes={fcmNodes}
                 edges={fcmEdges}
-                onRunSimulation={handleRunSimulation}
                 theme={theme}
               />
             ) : (
@@ -975,6 +725,7 @@ function Dashboard() {
                 theme={theme} 
               />
             )}
+            </Suspense>
             
             <AnimatePresence>
               {selectedEdge && (
@@ -1053,40 +804,38 @@ function Dashboard() {
                   <p className={cn(
                     "text-[10px] mt-1 transition-colors duration-500",
                     theme === 'modern' ? "text-white/20" : "text-slate-400"
-                  )}>Real-time convergence analysis across {simulationResults.length} iterations</p>
+                  )}>Real-time convergence analysis across {simulation?.iterations ?? 0} iterations</p>
                 </div>
                 <div className="flex items-center gap-4">
                   {simulationResults.length > 0 && (
                     <>
                       <div className={cn(
                         "flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors duration-500",
-                        theme === 'modern' ? "bg-emerald-500/5 border-emerald-500/10" : "bg-emerald-50 border-emerald-200"
+                        simulation?.converged
+                          ? (theme === 'modern' ? "bg-emerald-500/5 border-emerald-500/10" : "bg-emerald-50 border-emerald-200")
+                          : (theme === 'modern' ? "bg-amber-500/5 border-amber-500/10" : "bg-amber-50 border-amber-200")
                       )}>
                         <div className={cn(
                           "w-1.5 h-1.5 rounded-full transition-colors duration-500",
-                          theme === 'modern' ? "bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]" : "bg-emerald-600"
+                          simulation?.converged
+                            ? (theme === 'modern' ? "bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]" : "bg-emerald-600")
+                            : (theme === 'modern' ? "bg-amber-500 shadow-[0_0_5px_rgba(245,158,11,0.5)]" : "bg-amber-600")
                         )} />
                         <span className={cn(
                           "text-[9px] font-black uppercase tracking-widest transition-colors duration-500",
-                          theme === 'modern' ? "text-emerald-400" : "text-emerald-700"
+                          simulation?.converged
+                            ? (theme === 'modern' ? "text-emerald-400" : "text-emerald-700")
+                            : (theme === 'modern' ? "text-amber-400" : "text-amber-700")
                         )}>
-                          {simulationResults.length < 20 ? 'Converged' : 'Stabilized'}
+                          {simulation?.converged
+                            ? 'Converged'
+                            : simulation?.limitCycle
+                              ? `Limit Cycle (period ${simulation.limitCycle.period})`
+                              : 'Max Iterations Reached'}
                         </span>
                       </div>
                       <button 
-                        onClick={() => {
-                          setSimulationResults([]);
-                          // Reset nodes to their initial activation values
-                          setNodes((nds) => 
-                            nds.map(node => ({
-                              ...node,
-                              data: {
-                                ...node.data,
-                                activation: node.data.initialActivation
-                              }
-                            }))
-                          );
-                        }}
+                        onClick={resetSimulation}
                         className={cn(
                           "text-[9px] font-black px-3 py-1.5 rounded-lg transition-all uppercase tracking-widest",
                           theme === 'modern' ? "text-red-400/60 hover:text-red-400 hover:bg-red-500/5" : "text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -1100,7 +849,9 @@ function Dashboard() {
               </div>
               <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-4 gap-8">
                 <div className="lg:col-span-3">
-                  <SimulationChart data={simulationResults} nodes={fcmNodes} theme={theme} />
+                  <Suspense fallback={null}>
+                    <SimulationChart data={simulationResults} nodes={fcmNodes} theme={theme} />
+                  </Suspense>
                 </div>
                 <div className={cn(
                   "rounded-2xl border p-6 overflow-y-auto custom-scrollbar transition-colors duration-500",
@@ -1126,7 +877,7 @@ function Dashboard() {
                               <span className={cn(
                                 "text-xs font-black transition-colors duration-500",
                                 theme === 'modern' ? "text-white" : "text-slate-900"
-                              )}>{(finalVal * 100).toFixed(1)}%</span>
+                              )}>{finalVal.toFixed(3)}</span>
                             </div>
                             <div className="flex items-center gap-3">
                               <div className={cn(
@@ -1135,10 +886,13 @@ function Dashboard() {
                               )}>
                                 <div 
                                   className={cn(
-                                    "h-full bg-emerald-500 transition-all duration-1000",
-                                    theme === 'modern' && "shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                                    "h-full transition-all duration-1000",
+                                    finalVal >= 0 ? "bg-emerald-500" : "bg-red-500",
+                                    theme === 'modern' && (finalVal >= 0
+                                      ? "shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                                      : "shadow-[0_0_10px_rgba(239,68,68,0.5)]")
                                   )}
-                                  style={{ width: `${finalVal * 100}%` }}
+                                  style={{ width: `${Math.min(Math.abs(finalVal), 1) * 100}%` }}
                                 />
                               </div>
                               <span className={cn(
@@ -1204,6 +958,10 @@ function Dashboard() {
           isSimulating={isSimulating}
           lambda={lambda}
           setLambda={setLambda}
+          maxIterations={maxIterations}
+          setMaxIterations={setMaxIterations}
+          convergenceThreshold={convergenceThreshold}
+          setConvergenceThreshold={setConvergenceThreshold}
           linguisticScale={linguisticScale}
           setLinguisticScale={setLinguisticScale}
           membershipFunction={membershipFunction}
