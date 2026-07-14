@@ -28,12 +28,11 @@ import {
   FCMNode, 
   FCMEdge, 
   ActivationFunction, 
-  SimulationResult,
   LinguisticScalePreset,
   MembershipFunctionType,
   LINGUISTIC_SCALE_PRESETS,
 } from './types';
-import { runSimulation } from './logic/fcmEngine';
+import { runSimulation, SimulationOutcome } from './logic/fcmEngine';
 import { cn } from './lib/utils';
 
 const nodeTypes = {
@@ -77,8 +76,11 @@ function Dashboard() {
   const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
   const [activationFn, setActivationFn] = useState<ActivationFunction>('sigmoid');
   const [lambda, setLambda] = useState(1);
-  const [simulationResults, setSimulationResults] = useState<SimulationResult[]>([]);
+  const [maxIterations, setMaxIterations] = useState(25);
+  const [convergenceThreshold, setConvergenceThreshold] = useState(0.001);
+  const [simulation, setSimulation] = useState<SimulationOutcome | null>(null);
   const [isSimulating, setIsSimulating] = useState(false);
+  const simulationResults = simulation?.steps ?? [];
   const [activeTab, setActiveTab] = useState<'canvas' | 'data' | 'matrix' | 'inference' | 'experiments'>('canvas');
   const [theme, setTheme] = useState<'modern' | 'academic'>('modern');
   const [panelHeight, setPanelHeight] = useState(120);
@@ -161,6 +163,8 @@ function Dashboard() {
         config: {
           activationFunction: activationFn,
           lambda,
+          maxIterations,
+          convergenceThreshold,
           linguisticScale,
           membershipFunction,
           theme,
@@ -181,13 +185,15 @@ function Dashboard() {
       config: {
         activationFunction: activationFn,
         lambda,
+        maxIterations,
+        convergenceThreshold,
         linguisticScale,
         membershipFunction,
         theme,
       },
       version: 1,
     };
-  }, [nodes, edges, currentProject, activationFn, lambda, linguisticScale, membershipFunction, theme]);
+  }, [nodes, edges, currentProject, activationFn, lambda, maxIterations, convergenceThreshold, linguisticScale, membershipFunction, theme]);
 
   // Save current project
   const saveCurrentProject = useCallback(async (): Promise<Project | null> => {
@@ -239,13 +245,15 @@ function Dashboard() {
     if (project.config) {
       setActivationFn(project.config.activationFunction);
       setLambda(project.config.lambda);
+      setMaxIterations(project.config.maxIterations ?? 25);
+      setConvergenceThreshold(project.config.convergenceThreshold ?? 0.001);
       setLinguisticScale(project.config.linguisticScale);
       setMembershipFunction(project.config.membershipFunction);
       setTheme(project.config.theme);
     }
 
     // Clear simulation results when loading new project
-    setSimulationResults([]);
+    setSimulation(null);
     setSaveStatus('saved');
   }, [setNodes, setEdges]);
 
@@ -255,7 +263,7 @@ function Dashboard() {
     setNodes([]);
     setEdges([]);
     setCurrentProject(emptyProject);
-    setSimulationResults([]);
+    setSimulation(null);
     setSaveStatus('unsaved');
     // Auto-save the new project immediately
     storageService.saveProject(emptyProject).then(result => {
@@ -284,7 +292,9 @@ function Dashboard() {
       }
     };
     loadLastProject();
-  }, []); // Only run on mount
+    // Intentionally mount-only: this restores the last session exactly once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-save when nodes/edges change (debounced)
   useEffect(() => {
@@ -300,7 +310,11 @@ function Dashboard() {
     });
     
     return () => unsubscribe();
-  }, [nodes, edges, activationFn, lambda, linguisticScale, membershipFunction, theme]);
+    // buildCurrentProject/currentProject are deliberately excluded: re-running
+    // on every save would schedule redundant auto-saves. The deps list is the
+    // set of user-editable inputs that should trigger an auto-save.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodes, edges, activationFn, lambda, maxIterations, convergenceThreshold, linguisticScale, membershipFunction, theme]);
 
   // Rename project
   const renameProject = useCallback(async (newName: string) => {
@@ -375,9 +389,17 @@ function Dashboard() {
   }, [nodes, edges, saveToHistory, setNodes, setEdges]);
 
   useEffect(() => {
+    const isTextInputFocused = () => {
+      const el = document.activeElement as HTMLElement | null;
+      return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
       const isCtrl = e.ctrlKey || e.metaKey;
-      
+
+      // Let native text-editing shortcuts work inside inputs and textareas
+      if (isTextInputFocused()) return;
+
       if (isCtrl && e.key === 'z') {
         e.preventDefault();
         undo();
@@ -385,17 +407,11 @@ function Dashboard() {
         e.preventDefault();
         redo();
       } else if (isCtrl && e.key === 'c') {
-        if (document.activeElement?.tagName !== 'INPUT') {
-          copy();
-        }
+        copy();
       } else if (isCtrl && e.key === 'v') {
-        if (document.activeElement?.tagName !== 'INPUT') {
-          paste();
-        }
+        paste();
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (document.activeElement?.tagName !== 'INPUT') {
-          deleteSelected();
-        }
+        deleteSelected();
       }
     };
 
@@ -440,7 +456,7 @@ function Dashboard() {
         return node;
       })
     );
-  }, [setNodes]);
+  }, [saveToHistory, setNodes]);
 
   const updateEdgeWeightById = useCallback((edgeId: string, weight: number) => {
     saveToHistory();
@@ -452,7 +468,7 @@ function Dashboard() {
         return edge;
       })
     );
-  }, [setEdges]);
+  }, [saveToHistory, setEdges]);
 
   const flipEdge = useCallback((edgeId: string) => {
     saveToHistory();
@@ -468,7 +484,7 @@ function Dashboard() {
         return edge;
       })
     );
-  }, [setEdges]);
+  }, [saveToHistory, setEdges]);
 
   const updateNodeActivation = useCallback((nodeId: string, initialActivation: number) => {
     saveToHistory();
@@ -483,7 +499,7 @@ function Dashboard() {
         return node;
       })
     );
-  }, [setNodes]);
+  }, [saveToHistory, setNodes]);
 
   const reorganizeTopology = useCallback(() => {
     saveToHistory();
@@ -517,18 +533,18 @@ function Dashboard() {
         };
       })
     );
-  }, [nodes, edges, setNodes]);
+  }, [nodes, edges, saveToHistory, setNodes]);
 
   const deleteNode = useCallback((nodeId: string) => {
     saveToHistory();
     setNodes((nds) => nds.filter((n) => n.id !== nodeId));
     setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
-  }, [setNodes, setEdges]);
+  }, [saveToHistory, setNodes, setEdges]);
 
   const deleteEdge = useCallback((edgeId: string) => {
     saveToHistory();
     setEdges((eds) => eds.filter((e) => e.id !== edgeId));
-  }, [setEdges]);
+  }, [saveToHistory, setEdges]);
 
   const nodesWithCallbacks = useMemo(() => {
     return nodes.map((node) => ({
@@ -657,7 +673,7 @@ function Dashboard() {
       animated: true,
     };
     setEdges((eds) => addEdge(newEdge, eds));
-  }, [setEdges]);
+  }, [saveToHistory, setEdges]);
 
   const updateEdgeWeight = useCallback((weight: number) => {
     if (!selectedEdge) return;
@@ -671,18 +687,25 @@ function Dashboard() {
       })
     );
     setSelectedEdge((prev) => prev ? { ...prev, data: { ...prev.data, weight } } : null);
-  }, [selectedEdge, setEdges]);
+  }, [selectedEdge, saveToHistory, setEdges]);
 
   const handleRunSimulation = () => {
     setIsSimulating(true);
-    setTimeout(() => {
-      const results = runSimulation(fcmNodes, fcmEdges, activationFn, lambda);
-      setSimulationResults(results);
-      
+    try {
+      const outcome = runSimulation(
+        fcmNodes,
+        fcmEdges,
+        activationFn,
+        lambda,
+        maxIterations,
+        convergenceThreshold
+      );
+      setSimulation(outcome);
+
       // Sync final results back to nodes for canvas visualization
-      if (results.length > 0) {
-        const finalState = results[results.length - 1];
-        setNodes((nds) => 
+      if (outcome.steps.length > 0) {
+        const finalState = outcome.steps[outcome.steps.length - 1];
+        setNodes((nds) =>
           nds.map(node => ({
             ...node,
             data: {
@@ -692,9 +715,9 @@ function Dashboard() {
           }))
         );
       }
-      
+    } finally {
       setIsSimulating(false);
-    }, 800);
+    }
   };
 
   const handleImportData = useCallback((importedNodes: FCMNode[], importedEdges: FCMEdge[]) => {
@@ -727,7 +750,7 @@ function Dashboard() {
 
     setNodes(newNodes);
     setEdges(newEdges);
-    setSimulationResults([]);
+    setSimulation(null);
   }, [saveToHistory, setNodes, setEdges]);
 
   return (
@@ -1047,29 +1070,35 @@ function Dashboard() {
                   <p className={cn(
                     "text-[10px] mt-1 transition-colors duration-500",
                     theme === 'modern' ? "text-white/20" : "text-slate-400"
-                  )}>Real-time convergence analysis across {simulationResults.length} iterations</p>
+                  )}>Real-time convergence analysis across {simulation?.iterations ?? 0} iterations</p>
                 </div>
                 <div className="flex items-center gap-4">
                   {simulationResults.length > 0 && (
                     <>
                       <div className={cn(
                         "flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors duration-500",
-                        theme === 'modern' ? "bg-emerald-500/5 border-emerald-500/10" : "bg-emerald-50 border-emerald-200"
+                        simulation?.converged
+                          ? (theme === 'modern' ? "bg-emerald-500/5 border-emerald-500/10" : "bg-emerald-50 border-emerald-200")
+                          : (theme === 'modern' ? "bg-amber-500/5 border-amber-500/10" : "bg-amber-50 border-amber-200")
                       )}>
                         <div className={cn(
                           "w-1.5 h-1.5 rounded-full transition-colors duration-500",
-                          theme === 'modern' ? "bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]" : "bg-emerald-600"
+                          simulation?.converged
+                            ? (theme === 'modern' ? "bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]" : "bg-emerald-600")
+                            : (theme === 'modern' ? "bg-amber-500 shadow-[0_0_5px_rgba(245,158,11,0.5)]" : "bg-amber-600")
                         )} />
                         <span className={cn(
                           "text-[9px] font-black uppercase tracking-widest transition-colors duration-500",
-                          theme === 'modern' ? "text-emerald-400" : "text-emerald-700"
+                          simulation?.converged
+                            ? (theme === 'modern' ? "text-emerald-400" : "text-emerald-700")
+                            : (theme === 'modern' ? "text-amber-400" : "text-amber-700")
                         )}>
-                          {simulationResults.length < 20 ? 'Converged' : 'Stabilized'}
+                          {simulation?.converged ? 'Converged' : 'Max Iterations Reached'}
                         </span>
                       </div>
                       <button 
                         onClick={() => {
-                          setSimulationResults([]);
+                          setSimulation(null);
                           // Reset nodes to their initial activation values
                           setNodes((nds) => 
                             nds.map(node => ({
@@ -1120,7 +1149,7 @@ function Dashboard() {
                               <span className={cn(
                                 "text-xs font-black transition-colors duration-500",
                                 theme === 'modern' ? "text-white" : "text-slate-900"
-                              )}>{(finalVal * 100).toFixed(1)}%</span>
+                              )}>{finalVal.toFixed(3)}</span>
                             </div>
                             <div className="flex items-center gap-3">
                               <div className={cn(
@@ -1129,10 +1158,13 @@ function Dashboard() {
                               )}>
                                 <div 
                                   className={cn(
-                                    "h-full bg-emerald-500 transition-all duration-1000",
-                                    theme === 'modern' && "shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                                    "h-full transition-all duration-1000",
+                                    finalVal >= 0 ? "bg-emerald-500" : "bg-red-500",
+                                    theme === 'modern' && (finalVal >= 0
+                                      ? "shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                                      : "shadow-[0_0_10px_rgba(239,68,68,0.5)]")
                                   )}
-                                  style={{ width: `${finalVal * 100}%` }}
+                                  style={{ width: `${Math.min(Math.abs(finalVal), 1) * 100}%` }}
                                 />
                               </div>
                               <span className={cn(
@@ -1198,6 +1230,10 @@ function Dashboard() {
           isSimulating={isSimulating}
           lambda={lambda}
           setLambda={setLambda}
+          maxIterations={maxIterations}
+          setMaxIterations={setMaxIterations}
+          convergenceThreshold={convergenceThreshold}
+          setConvergenceThreshold={setConvergenceThreshold}
           linguisticScale={linguisticScale}
           setLinguisticScale={setLinguisticScale}
           membershipFunction={membershipFunction}

@@ -3,7 +3,7 @@
  */
 
 import { SimulationRun, generateRunId, ConceptState, SimulationConfig, DEFAULT_SIMULATION_CONFIG } from './types';
-import { FCMNode, FCMEdge, SimulationResult } from '../../types';
+import { FCMNode, FCMEdge } from '../../types';
 import { runSimulation } from '../../logic/fcmEngine';
 
 const STORAGE_KEY = 'fcm_experiment_runs';
@@ -88,18 +88,18 @@ class ExperimentStore {
       initialActivation: node.initialActivation,
     }));
     
-    // Run simulation - results is array of {iteration, [nodeId]: activation}
-    const results: SimulationResult[] = runSimulation(
-      nodes, 
-      edges, 
+    // Run simulation
+    const outcome = runSimulation(
+      nodes,
+      edges,
       fullConfig.activationFunction,
       fullConfig.lambda,
       fullConfig.maxIterations,
       fullConfig.convergenceThreshold
     );
-    
-    // Build history from results - each result is one iteration
-    const history: ConceptState[][] = results.map((iterResult) => {
+
+    // Build history from steps - each step is one iteration
+    const history: ConceptState[][] = outcome.steps.map((iterResult) => {
       return nodes.map(node => ({
         id: node.id,
         label: node.label,
@@ -107,19 +107,16 @@ class ExperimentStore {
         initialActivation: node.initialActivation,
       }));
     });
-    
+
     // Final state is the last iteration
-    const lastResult = results[results.length - 1];
+    const lastResult = outcome.steps[outcome.steps.length - 1];
     const finalState: ConceptState[] = nodes.map(node => ({
       id: node.id,
       label: node.label,
       activation: lastResult ? (lastResult[node.id] ?? node.initialActivation) : node.initialActivation,
       initialActivation: node.initialActivation,
     }));
-    
-    // Check convergence - if we have fewer iterations than max, it converged
-    const converged = results.length < fullConfig.maxIterations;
-    
+
     const run: SimulationRun = {
       id: generateRunId(),
       name,
@@ -129,8 +126,8 @@ class ExperimentStore {
       initialState,
       history,
       finalState,
-      converged,
-      iterations: results.length,
+      converged: outcome.converged,
+      iterations: outcome.iterations,
       clampedConcepts: clampedConceptIds,
     };
     

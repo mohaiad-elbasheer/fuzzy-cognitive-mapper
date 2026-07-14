@@ -64,6 +64,10 @@ export interface ProjectEdge {
 export interface ProjectConfig {
   activationFunction: ActivationFunction;
   lambda: number;
+  /** Optional for backwards compatibility with projects saved before v1.1 */
+  maxIterations?: number;
+  /** Optional for backwards compatibility with projects saved before v1.1 */
+  convergenceThreshold?: number;
   linguisticScale: LinguisticScalePreset;
   membershipFunction: MembershipFunctionType;
   theme: 'modern' | 'academic';

@@ -223,10 +223,10 @@ const ExperimentsTab: React.FC<ExperimentsTabProps> = ({
       }));
       
       // Run simulation
-      const simResults = runSimulation(modifiedNodes, edges, 'sigmoid', 1, 50, 0.001);
-      
-      if (simResults.length > 0) {
-        const finalState = simResults[simResults.length - 1];
+      const { steps } = runSimulation(modifiedNodes, edges, 'sigmoid', 1, 50, 0.001);
+
+      if (steps.length > 0) {
+        const finalState = steps[steps.length - 1];
         const dataPoint: SensitivityData = { inputValue: sweepValue };
         
         // Get all concept final values

@@ -70,69 +70,74 @@ describe('activation functions', () => {
 
 describe('runSimulation', () => {
   it('records the initial state as iteration 0', () => {
-    const results = runSimulation([node('a', 0.3)], [], 'sigmoid', 1);
-    expect(results[0]).toEqual({ iteration: 0, a: 0.3 });
+    const { steps } = runSimulation([node('a', 0.3)], [], 'sigmoid', 1);
+    expect(steps[0]).toEqual({ iteration: 0, a: 0.3 });
   });
 
-  it('converges for a simple stable map', () => {
+  it('converges for a simple stable map and reports it', () => {
     const nodes = [node('a', 0.6), node('b', 0.4)];
     const edges = [edge('a', 'b', 0.8)];
-    const results = runSimulation(nodes, edges, 'sigmoid', 1, 100, 0.001);
+    const outcome = runSimulation(nodes, edges, 'sigmoid', 1, 100, 0.001);
 
+    expect(outcome.converged).toBe(true);
     // Stops well before maxIterations because the state stabilizes
-    expect(results.length).toBeLessThan(101);
-    const last = results[results.length - 1];
-    const prev = results[results.length - 2];
+    expect(outcome.iterations).toBeLessThan(100);
+    expect(outcome.steps.length).toBe(outcome.iterations + 1);
+    const last = outcome.steps[outcome.steps.length - 1];
+    const prev = outcome.steps[outcome.steps.length - 2];
     expect(Math.abs(last.a - prev.a)).toBeLessThan(0.001);
     expect(Math.abs(last.b - prev.b)).toBeLessThan(0.001);
   });
 
-  it('never exceeds maxIterations', () => {
-    const nodes = [node('a', 0.9), node('b', 0.1)];
-    // Strong negative feedback loop that oscillates under trivalent
-    const edges = [edge('a', 'b', -1), edge('b', 'a', -1)];
-    const results = runSimulation(nodes, edges, 'trivalent', 1, 10, 1e-9);
-    // results = initial state + at most maxIterations updates
-    expect(results.length).toBeLessThanOrEqual(11);
+  it('never exceeds maxIterations and reports non-convergence', () => {
+    // Negative feedback loop that produces a period-8 limit cycle under
+    // trivalent activation: the state never settles.
+    const nodes = [node('a', 1), node('b', 0)];
+    const edges = [edge('a', 'b', 1), edge('b', 'a', -1)];
+    const outcome = runSimulation(nodes, edges, 'trivalent', 1, 10, 1e-9);
+    expect(outcome.iterations).toBe(10);
+    expect(outcome.steps.length).toBe(11);
+    expect(outcome.converged).toBe(false);
   });
 
   it('a positive edge pushes the target above its no-input baseline', () => {
-    const base = runSimulation([node('t', 0.5)], [], 'sigmoid', 1);
+    const base = runSimulation([node('t', 0.5)], [], 'sigmoid', 1).steps;
     const boosted = runSimulation(
       [node('s', 1), node('t', 0.5)],
       [edge('s', 't', 1)],
       'sigmoid',
       1
-    );
+    ).steps;
     const baseFinal = base[base.length - 1].t;
     const boostedFinal = boosted[boosted.length - 1].t;
     expect(boostedFinal).toBeGreaterThan(baseFinal);
   });
 
   it('a negative edge pushes the target below its no-input baseline', () => {
-    const base = runSimulation([node('t', 0.5)], [], 'sigmoid', 1);
+    const base = runSimulation([node('t', 0.5)], [], 'sigmoid', 1).steps;
     const inhibited = runSimulation(
       [node('s', 1), node('t', 0.5)],
       [edge('s', 't', -1)],
       'sigmoid',
       1
-    );
+    ).steps;
     const baseFinal = base[base.length - 1].t;
     const inhibitedFinal = inhibited[inhibited.length - 1].t;
     expect(inhibitedFinal).toBeLessThan(baseFinal);
   });
 
   it('handles an empty graph', () => {
-    const results = runSimulation([], [], 'sigmoid', 1);
-    expect(results.length).toBeGreaterThanOrEqual(1);
-    expect(results[0]).toEqual({ iteration: 0 });
+    const { steps, converged } = runSimulation([], [], 'sigmoid', 1);
+    expect(steps.length).toBeGreaterThanOrEqual(1);
+    expect(steps[0]).toEqual({ iteration: 0 });
+    expect(converged).toBe(true);
   });
 
   it('tanh simulation can settle at negative activations', () => {
     const nodes = [node('s', 1), node('t', 0)];
     const edges = [edge('s', 't', -1)];
-    const results = runSimulation(nodes, edges, 'tanh', 2, 100, 0.0001);
-    const final = results[results.length - 1];
+    const { steps } = runSimulation(nodes, edges, 'tanh', 2, 100, 0.0001);
+    const final = steps[steps.length - 1];
     expect(final.t).toBeLessThan(0);
     expect(final.t).toBeGreaterThanOrEqual(-1);
   });

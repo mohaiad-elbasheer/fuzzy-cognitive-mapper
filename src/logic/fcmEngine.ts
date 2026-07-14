@@ -47,7 +47,7 @@ const trivalent = (x: number, _lambda: number = 1): number => {
 };
 
 /**
- * Linear activation function (continuous, unbounded)
+ * Linear activation function (continuous, clamped to [0,1])
  * f(x) = clamp(lambda * x, 0, 1)
  */
 const linear = (x: number, lambda: number = 1): number => {
@@ -75,9 +75,21 @@ export const getActivationFunction = (
 // ============================================================================
 
 /**
+ * Structured outcome of a simulation run.
+ * `steps[0]` is the initial state; each following entry is one inference update.
+ */
+export interface SimulationOutcome {
+  steps: SimulationResult[];
+  /** True when the state change fell below the convergence threshold. */
+  converged: boolean;
+  /** Number of inference updates performed (steps.length - 1). */
+  iterations: number;
+}
+
+/**
  * Standard FCM inference rule:
  * A_i(k+1) = f( Σ A_j(k) · w_ji + A_i(k) )
- * 
+ *
  * This is the classic Kosko inference formula used in most FCM applications.
  */
 export const runSimulation = (
@@ -87,18 +99,19 @@ export const runSimulation = (
   lambda: number = 1,
   maxIterations: number = 25,
   convergenceThreshold: number = 0.001
-): SimulationResult[] => {
-  const results: SimulationResult[] = [];
-  
+): SimulationOutcome => {
+  const steps: SimulationResult[] = [];
+
   // Initialize activation state
   let currentActivations = nodes.reduce((acc, node) => {
     acc[node.id] = node.initialActivation;
     return acc;
   }, {} as Record<string, number>);
 
-  results.push({ iteration: 0, ...currentActivations });
+  steps.push({ iteration: 0, ...currentActivations });
 
   const f = getActivationFunction(activationFn);
+  let converged = false;
 
   for (let k = 0; k < maxIterations; k++) {
     const nextActivations: Record<string, number> = {};
@@ -121,14 +134,17 @@ export const runSimulation = (
       if (diff > maxDiff) maxDiff = diff;
     }
 
-    results.push({ iteration: k + 1, ...nextActivations });
+    steps.push({ iteration: k + 1, ...nextActivations });
     currentActivations = nextActivations;
 
     // Check for convergence
-    if (maxDiff < convergenceThreshold) break;
+    if (maxDiff < convergenceThreshold) {
+      converged = true;
+      break;
+    }
   }
 
-  return results;
+  return { steps, converged, iterations: steps.length - 1 };
 };
 
 /**
@@ -139,9 +155,9 @@ export const runSimulationWithConfig = (
   nodes: FCMNode[],
   edges: FCMEdge[],
   config: Partial<FCMModelConfig> = {}
-): SimulationResult[] => {
+): SimulationOutcome => {
   const fullConfig = { ...DEFAULT_MODEL_CONFIG, ...config };
-  
+
   return runSimulation(
     nodes,
     edges,

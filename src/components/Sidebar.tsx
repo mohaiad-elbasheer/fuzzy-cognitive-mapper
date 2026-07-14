@@ -17,6 +17,10 @@ interface SidebarProps {
   setActivationFn: (fn: ActivationFunction) => void;
   lambda: number;
   setLambda: (val: number) => void;
+  maxIterations: number;
+  setMaxIterations: (val: number) => void;
+  convergenceThreshold: number;
+  setConvergenceThreshold: (val: number) => void;
   linguisticScale: LinguisticScalePreset;
   setLinguisticScale: (scale: LinguisticScalePreset) => void;
   membershipFunction: MembershipFunctionType;
@@ -38,6 +42,10 @@ const Sidebar: React.FC<SidebarProps> = ({
   setActivationFn,
   lambda,
   setLambda,
+  maxIterations,
+  setMaxIterations,
+  convergenceThreshold,
+  setConvergenceThreshold,
   linguisticScale,
   setLinguisticScale,
   membershipFunction,
@@ -105,28 +113,26 @@ const Sidebar: React.FC<SidebarProps> = ({
               "grid grid-cols-2 gap-2 p-1.5 rounded-2xl border transition-colors duration-500",
               theme === 'modern' ? "bg-white/5 border-white/10" : "bg-slate-50 border-slate-200"
             )}>
-              <button
-                onClick={() => setActivationFn('sigmoid')}
-                className={cn(
-                  "py-2.5 px-4 text-xs font-bold rounded-xl transition-all",
-                  activationFn === 'sigmoid' 
-                    ? (theme === 'modern' ? "bg-white/10 text-emerald-400 shadow-md" : "bg-white text-emerald-600 shadow-sm border border-slate-200")
-                    : (theme === 'modern' ? "text-white/40 hover:text-white/60" : "text-slate-400 hover:text-slate-600")
-                )}
-              >
-                σ Sigmoid
-              </button>
-              <button
-                onClick={() => setActivationFn('tanh')}
-                className={cn(
-                  "py-2.5 px-4 text-xs font-bold rounded-xl transition-all",
-                  activationFn === 'tanh' 
-                    ? (theme === 'modern' ? "bg-white/10 text-emerald-400 shadow-md" : "bg-white text-emerald-600 shadow-sm border border-slate-200")
-                    : (theme === 'modern' ? "text-white/40 hover:text-white/60" : "text-slate-400 hover:text-slate-600")
-                )}
-              >
-                tanh
-              </button>
+              {([
+                { fn: 'sigmoid', label: 'σ Sigmoid' },
+                { fn: 'tanh', label: 'tanh' },
+                { fn: 'bivalent', label: 'Bivalent' },
+                { fn: 'trivalent', label: 'Trivalent' },
+                { fn: 'linear', label: 'Linear' },
+              ] as { fn: ActivationFunction; label: string }[]).map(({ fn, label }) => (
+                <button
+                  key={fn}
+                  onClick={() => setActivationFn(fn)}
+                  className={cn(
+                    "py-2.5 px-4 text-xs font-bold rounded-xl transition-all",
+                    activationFn === fn
+                      ? (theme === 'modern' ? "bg-white/10 text-emerald-400 shadow-md" : "bg-white text-emerald-600 shadow-sm border border-slate-200")
+                      : (theme === 'modern' ? "text-white/40 hover:text-white/60" : "text-slate-400 hover:text-slate-600")
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -152,6 +158,56 @@ const Sidebar: React.FC<SidebarProps> = ({
                 theme === 'modern' ? "bg-white/10" : "bg-slate-200"
               )}
             />
+          </div>
+
+          <div>
+            <div className="flex justify-between items-center mb-3">
+              <label className={cn(
+                "text-[10px] font-black uppercase tracking-[0.2em] block transition-colors duration-500",
+                theme === 'modern' ? "text-white/40" : "text-slate-500"
+              )}>
+                Max Iterations
+              </label>
+              <span className={cn("text-xs font-bold transition-colors duration-500", theme === 'modern' ? "text-emerald-400" : "text-emerald-600")}>{maxIterations}</span>
+            </div>
+            <input
+              type="range"
+              min="5"
+              max="200"
+              step="5"
+              value={maxIterations}
+              onChange={(e) => setMaxIterations(parseInt(e.target.value, 10))}
+              className={cn(
+                "w-full h-1.5 rounded-full appearance-none cursor-pointer accent-emerald-500 transition-colors duration-500",
+                theme === 'modern' ? "bg-white/10" : "bg-slate-200"
+              )}
+            />
+          </div>
+
+          <div>
+            <div className="flex justify-between items-center mb-3">
+              <label className={cn(
+                "text-[10px] font-black uppercase tracking-[0.2em] block transition-colors duration-500",
+                theme === 'modern' ? "text-white/40" : "text-slate-500"
+              )}>
+                Convergence ε
+              </label>
+              <span className={cn("text-xs font-bold transition-colors duration-500", theme === 'modern' ? "text-emerald-400" : "text-emerald-600")}>{convergenceThreshold.toExponential(0)}</span>
+            </div>
+            <select
+              value={convergenceThreshold}
+              onChange={(e) => setConvergenceThreshold(parseFloat(e.target.value))}
+              className={cn(
+                "w-full border rounded-lg px-2 py-1.5 text-[10px] font-bold outline-none transition-all duration-500",
+                theme === 'modern' ? "bg-white/5 border-white/10 focus:border-emerald-500 text-white/80" : "bg-white border-slate-200 focus:border-emerald-600 text-slate-700"
+              )}
+            >
+              {[0.01, 0.001, 0.0001, 0.00001].map(v => (
+                <option key={v} value={v} className={theme === 'modern' ? "bg-[#0a0a14]" : "bg-white"}>
+                  {v.toExponential(0)} — stop when max change per step falls below
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Advanced Parameters - Collapsed by default */}
