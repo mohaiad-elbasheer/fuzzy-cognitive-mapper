@@ -14,6 +14,8 @@ export interface FCMNode {
   label: string;
   activation: number;
   initialActivation: number;
+  /** Scenario mode: hold this concept at its initial activation during simulation */
+  clamped?: boolean;
   x?: number;
   y?: number;
   semanticStates?: SemanticState[];

@@ -142,3 +142,47 @@ describe('runSimulation', () => {
     expect(final.t).toBeGreaterThanOrEqual(-1);
   });
 });
+
+describe('scenario clamping', () => {
+  it('holds clamped concepts at their initial activation', () => {
+    const nodes = [node('driver', 0.9), node('outcome', 0.1)];
+    const edges = [edge('outcome', 'driver', 1)]; // pressure that would move the driver
+    const { steps } = runSimulation(nodes, edges, 'sigmoid', 1, 25, 0.001, {
+      clampedNodeIds: ['driver'],
+    });
+
+    for (const step of steps) {
+      expect(step.driver).toBe(0.9);
+    }
+  });
+
+  it('unclamped concepts still respond to clamped inputs', () => {
+    const nodes = [node('driver', 1), node('outcome', 0.5)];
+    const edges = [edge('driver', 'outcome', 1)];
+    const clampedRun = runSimulation(nodes, edges, 'sigmoid', 1, 50, 0.001, {
+      clampedNodeIds: ['driver'],
+    });
+    const final = clampedRun.steps[clampedRun.steps.length - 1];
+    expect(final.driver).toBe(1);
+    expect(final.outcome).toBeGreaterThan(0.5);
+  });
+});
+
+describe('limit cycle detection', () => {
+  it('flags the trivalent negative-feedback oscillator as a limit cycle', () => {
+    const nodes = [node('a', 1), node('b', 0)];
+    const edges = [edge('a', 'b', 1), edge('b', 'a', -1)];
+    // The trajectory repeats with period 8; run long enough to see 2+ cycles
+    const outcome = runSimulation(nodes, edges, 'trivalent', 1, 40, 1e-9);
+
+    expect(outcome.converged).toBe(false);
+    expect(outcome.limitCycle).toBeDefined();
+    expect(outcome.limitCycle!.period).toBe(8);
+  });
+
+  it('does not report a limit cycle for converged runs', () => {
+    const outcome = runSimulation([node('a', 0.6)], [], 'sigmoid', 1, 100, 0.001);
+    expect(outcome.converged).toBe(true);
+    expect(outcome.limitCycle).toBeUndefined();
+  });
+});

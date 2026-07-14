@@ -12,8 +12,8 @@ import {
   getNodesBounds,
   getViewportForBounds,
 } from '@xyflow/react';
-import { toPng } from 'html-to-image';
-import { Camera, Loader2 } from 'lucide-react';
+import { toPng, toSvg } from 'html-to-image';
+import { Camera, FileCode, Loader2 } from 'lucide-react';
 import '@xyflow/react/dist/style.css';
 import { cn } from '../lib/utils';
 
@@ -83,7 +83,7 @@ const Canvas: React.FC<CanvasProps> = ({
     });
   }, [edges, theme, isExporting]);
 
-  const onDownloadImage = useCallback(async () => {
+  const exportImage = useCallback(async (format: 'png' | 'svg') => {
     if (!flowRef.current) return;
 
     const flowViewport = getViewport();
@@ -110,21 +110,24 @@ const Canvas: React.FC<CanvasProps> = ({
       // 4. Wait for React Flow to update the DOM
       await new Promise(resolve => setTimeout(resolve, 600));
 
-      const dataUrl = await toPng(flowRef.current, {
+      const exportOptions = {
         backgroundColor: theme === 'modern' ? '#0a0a14' : '#f5f0e8',
         style: {
           width: flowRef.current.clientWidth + 'px',
           height: flowRef.current.clientHeight + 'px',
         },
-        filter: (node) => {
+        filter: (node: HTMLElement) => {
           const exclusionClasses = ['react-flow__controls', 'react-flow__panel', 'react-flow__attribution'];
-          return !exclusionClasses.some((cls) => (node as HTMLElement).classList?.contains(cls));
+          return !exclusionClasses.some((cls) => node.classList?.contains(cls));
         },
-        pixelRatio: 2,
-      });
+      };
+
+      const dataUrl = format === 'png'
+        ? await toPng(flowRef.current, { ...exportOptions, pixelRatio: 2 })
+        : await toSvg(flowRef.current, exportOptions);
 
       const link = document.createElement('a');
-      link.download = `fcm-map-${new Date().toISOString().split('T')[0]}.png`;
+      link.download = `fcm-map-${new Date().toISOString().split('T')[0]}.${format}`;
       link.href = dataUrl;
       link.click();
     } catch (err) {
@@ -135,6 +138,9 @@ const Canvas: React.FC<CanvasProps> = ({
       setViewport(flowViewport, { duration: 0 });
     }
   }, [getNodes, setViewport, getViewport, theme]);
+
+  const onDownloadImage = useCallback(() => exportImage('png'), [exportImage]);
+  const onDownloadSvg = useCallback(() => exportImage('svg'), [exportImage]);
 
   return (
     <div 
@@ -202,7 +208,35 @@ const Canvas: React.FC<CanvasProps> = ({
                   ? "bg-[#0a0a14] text-white border-white/10" 
                   : "bg-white text-slate-900 border-slate-200"
               )}>
-                Capture Map
+                Export PNG
+              </div>
+            )}
+          </button>
+
+          <button
+            onClick={onDownloadSvg}
+            disabled={isExporting}
+            className={cn(
+              "relative group flex items-center justify-center w-9 h-9 rounded-xl border backdrop-blur-md shadow-xl transition-all duration-300",
+              theme === 'modern' 
+                ? "bg-[#0a0a14]/80 border-white/10 text-white hover:bg-white/10 hover:border-white/20" 
+                : "bg-white/80 border-slate-200 text-slate-900 hover:bg-white hover:border-slate-300"
+            )}
+          >
+            {isExporting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <FileCode className="w-4 h-4" />
+            )}
+
+            {!isExporting && (
+              <div className={cn(
+                "absolute left-full ml-3 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest whitespace-nowrap opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 pointer-events-none transition-all duration-300 shadow-2xl border",
+                theme === 'modern' 
+                  ? "bg-[#0a0a14] text-white border-white/10" 
+                  : "bg-white text-slate-900 border-slate-200"
+              )}>
+                Export SVG
               </div>
             )}
           </button>

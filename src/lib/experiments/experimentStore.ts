@@ -95,7 +95,8 @@ class ExperimentStore {
       fullConfig.activationFunction,
       fullConfig.lambda,
       fullConfig.maxIterations,
-      fullConfig.convergenceThreshold
+      fullConfig.convergenceThreshold,
+      { clampedNodeIds: clampedConceptIds }
     );
 
     // Build history from steps - each step is one iteration

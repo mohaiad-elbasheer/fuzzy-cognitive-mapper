@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Node, Edge } from '@xyflow/react';
-import { Plus, Trash2, Info, ArrowRight, Settings2, Languages, Hash, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, Info, ArrowRight, Settings2, Languages, Hash, ChevronDown, Download, Upload } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { LinguisticTerm, LINGUISTIC_TERMS } from '../types';
+import { LinguisticTerm, LINGUISTIC_TERMS, FCMNode, FCMEdge } from '../types';
+import { matrixToCSV, parseMatrixCSV } from '../lib/csv';
 
 interface MatrixEditorProps {
   nodes: Node[];
@@ -11,6 +12,7 @@ interface MatrixEditorProps {
   onUpdateNode: (nodeId: string, updates: any) => void;
   onAddNode: () => void;
   onDeleteNode: (nodeId: string) => void;
+  onImportData?: (nodes: FCMNode[], edges: FCMEdge[]) => void;
   linguisticTerms?: LinguisticTerm[];
   theme?: 'modern' | 'academic';
 }
@@ -22,10 +24,48 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
   onUpdateNode,
   onAddNode,
   onDeleteNode,
+  onImportData,
   linguisticTerms = LINGUISTIC_TERMS,
   theme = 'modern',
 }) => {
   const [inputMode, setInputMode] = useState<'numeric' | 'linguistic'>('numeric');
+  const [importError, setImportError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExportCSV = () => {
+    const fcmNodes: FCMNode[] = nodes.map(n => ({
+      id: n.id,
+      label: (n.data?.label as string) || 'Untitled',
+      activation: (n.data?.activation as number) ?? 0.5,
+      initialActivation: (n.data?.initialActivation as number) ?? 0.5,
+    }));
+    const fcmEdges: FCMEdge[] = edges.map(e => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      weight: (e.data?.weight as number) ?? 0,
+    }));
+
+    const csv = matrixToCSV(fcmNodes, fcmEdges);
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `fcm_matrix_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportCSV = async (file: File) => {
+    try {
+      const text = await file.text();
+      const { nodes: importedNodes, edges: importedEdges } = parseMatrixCSV(text);
+      setImportError(null);
+      onImportData?.(importedNodes, importedEdges);
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'Failed to parse CSV');
+    }
+  };
 
   const getWeight = (sourceId: string, targetId: string) => {
     const edge = edges.find((e) => e.source === sourceId && e.target === targetId);
@@ -92,6 +132,42 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
             </button>
           </div>
 
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleImportCSV(file);
+              e.target.value = '';
+            }}
+          />
+          {onImportData && (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              title="Import adjacency matrix from CSV (replaces the current map)"
+              className={cn(
+                "flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
+                theme === 'modern' ? "bg-white/5 text-white/60 border-white/10 hover:bg-white/10 hover:text-white" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+              )}
+            >
+              <Upload className="w-3.5 h-3.5" />
+              Import CSV
+            </button>
+          )}
+          <button
+            onClick={handleExportCSV}
+            disabled={nodes.length === 0}
+            title="Export adjacency matrix as CSV"
+            className={cn(
+              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border disabled:opacity-40",
+              theme === 'modern' ? "bg-white/5 text-white/60 border-white/10 hover:bg-white/10 hover:text-white" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+            )}
+          >
+            <Download className="w-3.5 h-3.5" />
+            Export CSV
+          </button>
           <button
             onClick={onAddNode}
             className={cn(
@@ -104,6 +180,16 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
           </button>
         </div>
       </div>
+
+      {importError && (
+        <div className={cn(
+          "px-8 py-3 text-xs font-bold border-b flex items-center justify-between",
+          theme === 'modern' ? "bg-red-500/10 text-red-400 border-red-500/20" : "bg-red-50 text-red-700 border-red-200"
+        )}>
+          <span>CSV import failed: {importError}</span>
+          <button onClick={() => setImportError(null)} className="underline">dismiss</button>
+        </div>
+      )}
 
       <div className="flex-1 min-h-0 overflow-auto p-8 custom-scrollbar">
         <div className="min-w-max min-h-max">

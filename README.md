@@ -14,7 +14,9 @@ Fuzzy Cognitive Maps are soft computing models that represent causal relationshi
 
 ### Core Functionality
 - **Visual Graph Editor** - Create and edit FCM models with intuitive drag-and-drop
-- **Real-time Simulation** - Run inference with multiple activation functions
+- **Real-time Simulation** - Run inference with five activation functions (sigmoid, tanh, bivalent, trivalent, linear)
+- **Convergence Reporting** - Fixed-point detection, limit-cycle detection, and configurable max iterations / threshold
+- **Scenario Clamping** - Lock concepts at their initial activation to model what-if scenarios
 - **Configurable Linguistic Scales** - 5, 7, 9, or 11-point scales
 - **Membership Function Visualization** - Triangular, Trapezoidal, Gaussian
 
@@ -28,7 +30,9 @@ Fuzzy Cognitive Maps are soft computing models that represent causal relationshi
 - **Dual Themes** - Modern dark mode and academic light mode
 - **Keyboard Shortcuts** - Undo/redo, copy/paste, delete
 - **Auto-layout** - Automatic graph organization
-- **Export** - Download your FCM as PNG image
+- **Export** - Download your FCM as PNG or SVG; adjacency matrix as CSV
+- **Interop** - Import adjacency-matrix CSVs from other FCM tools
+- **Persistence** - Projects auto-save to IndexedDB (with localStorage fallback and automatic migration)
 
 ## Quick Start
 

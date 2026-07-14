@@ -24,6 +24,7 @@ import {
   DEFAULT_PROJECT_CONFIG,
 } from './types';
 import { localStorageProvider } from './localStorageProvider';
+import { indexedDbProvider } from './indexedDbProvider';
 import { FCMNode, FCMEdge } from '../../types';
 
 // Re-export types for convenience
@@ -34,16 +35,73 @@ type ErrorCallback = (error: string) => void;
 
 class StorageService {
   private provider: StorageProvider;
-  private autoSaveInterval: number | null = null;
   private autoSaveDelay: number = 5000; // 5 seconds
   private pendingSave: Project | null = null;
   private saveTimeout: ReturnType<typeof setTimeout> | null = null;
-  
+
+  /**
+   * Resolves once the best available provider has been selected (and any
+   * one-time localStorage → IndexedDB migration has finished). Every data
+   * operation awaits this so reads/writes never race the migration.
+   */
+  private ready: Promise<void>;
+
   private onSaveCallbacks: SaveCallback[] = [];
   private onErrorCallbacks: ErrorCallback[] = [];
 
-  constructor(provider: StorageProvider = localStorageProvider) {
-    this.provider = provider;
+  constructor(provider?: StorageProvider) {
+    if (provider) {
+      this.provider = provider;
+      this.ready = Promise.resolve();
+    } else {
+      this.provider = localStorageProvider;
+      this.ready = this.initBestProvider();
+    }
+  }
+
+  /**
+   * Prefer IndexedDB (no ~5MB quota, no main-thread JSON churn); migrate any
+   * existing localStorage projects into it once. Falls back to localStorage
+   * when IndexedDB is unavailable (e.g. some private-browsing modes).
+   */
+  private async initBestProvider(): Promise<void> {
+    if (!indexedDbProvider.isAvailable) return;
+
+    try {
+      await this.migrateLocalStorageToIndexedDb();
+      this.provider = indexedDbProvider;
+    } catch (error) {
+      console.warn('IndexedDB unavailable, staying on localStorage:', error);
+    }
+  }
+
+  private async migrateLocalStorageToIndexedDb(): Promise<void> {
+    if (!localStorageProvider.isAvailable) {
+      // Nothing to migrate; still verify IndexedDB actually works
+      await indexedDbProvider.listProjects();
+      return;
+    }
+
+    const existing = await indexedDbProvider.listProjects();
+    if (!existing.success) throw new Error(existing.error);
+    const existingIds = new Set((existing.data ?? []).map(p => p.id));
+
+    const local = await localStorageProvider.listProjects();
+    for (const meta of local.data ?? []) {
+      if (existingIds.has(meta.id)) continue;
+      const project = await localStorageProvider.getProject(meta.id);
+      if (project.success && project.data) {
+        await indexedDbProvider.saveProject(project.data);
+      }
+    }
+
+    // Carry over the current-project pointer on first migration.
+    // localStorage data is intentionally left in place as a backup.
+    const idbCurrent = await indexedDbProvider.getCurrentProjectId();
+    if (!idbCurrent) {
+      const localCurrent = await localStorageProvider.getCurrentProjectId();
+      if (localCurrent) await indexedDbProvider.setCurrentProjectId(localCurrent);
+    }
   }
 
   /**
@@ -51,12 +109,14 @@ class StorageService {
    */
   setProvider(provider: StorageProvider): void {
     this.provider = provider;
+    this.ready = Promise.resolve();
   }
 
   /**
    * Get current provider info
    */
-  getProviderInfo(): { name: string; isAvailable: boolean } {
+  async getProviderInfo(): Promise<{ name: string; isAvailable: boolean }> {
+    await this.ready;
     return {
       name: this.provider.name,
       isAvailable: this.provider.isAvailable,
@@ -68,14 +128,17 @@ class StorageService {
   // ============================================================
 
   async listProjects(): Promise<StorageResult<ProjectMeta[]>> {
+    await this.ready;
     return this.provider.listProjects();
   }
 
   async getProject(id: string): Promise<StorageResult<Project>> {
+    await this.ready;
     return this.provider.getProject(id);
   }
 
   async saveProject(project: Project): Promise<StorageResult<Project>> {
+    await this.ready;
     const result = await this.provider.saveProject(project);
     
     if (result.success && result.data) {
@@ -88,6 +151,7 @@ class StorageService {
   }
 
   async deleteProject(id: string): Promise<StorageResult<void>> {
+    await this.ready;
     return this.provider.deleteProject(id);
   }
 
@@ -101,10 +165,12 @@ class StorageService {
   // ============================================================
 
   async getCurrentProjectId(): Promise<string | null> {
+    await this.ready;
     return this.provider.getCurrentProjectId();
   }
 
   async setCurrentProjectId(id: string | null): Promise<void> {
+    await this.ready;
     return this.provider.setCurrentProjectId(id);
   }
 
@@ -179,6 +245,7 @@ class StorageService {
       label: (node.data?.label as string) || 'Untitled',
       initialActivation: (node.data?.initialActivation as number) ?? 0.5,
       activation: (node.data?.activation as number) ?? (node.data?.initialActivation as number) ?? 0.5,
+      clamped: (node.data?.clamped as boolean) ?? false,
       position: node.position,
     }));
 
@@ -208,6 +275,7 @@ class StorageService {
         label: node.label,
         initialActivation: node.initialActivation,
         activation: node.activation,
+        clamped: node.clamped ?? false,
       },
     }));
 

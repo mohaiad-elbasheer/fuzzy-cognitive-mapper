@@ -45,6 +45,8 @@ export interface ProjectNode {
   label: string;
   initialActivation: number;
   activation: number;
+  /** Scenario mode: hold this concept at its initial activation during simulation */
+  clamped?: boolean;
   position: { x: number; y: number };
 }
 

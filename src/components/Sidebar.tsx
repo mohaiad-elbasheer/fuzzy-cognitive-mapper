@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings2, Plus, Trash2, Info, Activity, Zap, Link as LinkIcon, ArrowRight } from 'lucide-react';
+import { Settings2, Plus, Trash2, Info, Activity, Zap, Link as LinkIcon, ArrowRight, Lock, Unlock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FCMNode, FCMEdge, ActivationFunction, LinguisticScalePreset, MembershipFunctionType } from '../types';
 import { cn } from '../lib/utils';
@@ -282,6 +282,18 @@ const Sidebar: React.FC<SidebarProps> = ({
                       />
                     </div>
                     <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => onUpdateNode(node.id, { clamped: !node.clamped })}
+                        title={node.clamped ? "Unclamp: let this concept evolve during simulation" : "Clamp: hold this concept at its initial value (scenario input)"}
+                        className={cn(
+                          "p-1.5 rounded-lg transition-all",
+                          node.clamped
+                            ? (theme === 'modern' ? "bg-amber-500/20 text-amber-400" : "bg-amber-50 text-amber-600")
+                            : (theme === 'modern' ? "text-white/20 hover:text-amber-400 hover:bg-amber-500/10" : "text-slate-300 hover:text-amber-600 hover:bg-amber-50")
+                        )}
+                      >
+                        {node.clamped ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                      </button>
                       <button
                         onClick={() => setExpandedNode(isExpanded ? null : node.id)}
                         className={cn(

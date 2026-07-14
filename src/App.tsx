@@ -126,6 +126,7 @@ function Dashboard() {
       label: (node.data?.label as string) || 'New Concept',
       activation: (node.data?.activation as number) ?? (node.data?.initialActivation as number) ?? 0.5,
       initialActivation: (node.data?.initialActivation as number) ?? 0.5,
+      clamped: (node.data?.clamped as boolean) ?? false,
     }));
   }, [nodes]);
 
@@ -699,6 +700,7 @@ function Dashboard() {
                 onUpdateNode={updateNodeData}
                 onAddNode={addNode}
                 onDeleteNode={deleteNode}
+                onImportData={handleImportData}
                 linguisticTerms={currentLinguisticTerms}
                 theme={theme}
               />
@@ -825,7 +827,11 @@ function Dashboard() {
                             ? (theme === 'modern' ? "text-emerald-400" : "text-emerald-700")
                             : (theme === 'modern' ? "text-amber-400" : "text-amber-700")
                         )}>
-                          {simulation?.converged ? 'Converged' : 'Max Iterations Reached'}
+                          {simulation?.converged
+                            ? 'Converged'
+                            : simulation?.limitCycle
+                              ? `Limit Cycle (period ${simulation.limitCycle.period})`
+                              : 'Max Iterations Reached'}
                         </span>
                       </div>
                       <button 

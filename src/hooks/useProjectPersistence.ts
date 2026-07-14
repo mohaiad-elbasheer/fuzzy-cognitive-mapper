@@ -40,6 +40,7 @@ export function useProjectPersistence({
       label: (node.data?.label as string) || 'Untitled',
       initialActivation: (node.data?.initialActivation as number) ?? 0.5,
       activation: (node.data?.activation as number) ?? (node.data?.initialActivation as number) ?? 0.5,
+      clamped: (node.data?.clamped as boolean) ?? false,
       position: node.position,
     }));
     const projectEdges = edges.map(edge => ({

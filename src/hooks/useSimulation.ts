@@ -32,7 +32,8 @@ export function useSimulation(
         params.activationFn,
         params.lambda,
         params.maxIterations,
-        params.convergenceThreshold
+        params.convergenceThreshold,
+        { clampedNodeIds: fcmNodes.filter(n => n.clamped).map(n => n.id) }
       );
       setSimulation(outcome);
 
