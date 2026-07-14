@@ -44,7 +44,7 @@ const Canvas: React.FC<CanvasProps> = ({
   edgeTypes,
   theme = 'modern',
 }) => {
-  const { getNodes, getEdges, fitView, getViewport, setViewport } = useReactFlow();
+  const { getNodes, getViewport, setViewport } = useReactFlow();
   const [isExporting, setIsExporting] = useState(false);
   const flowRef = useRef<HTMLDivElement>(null);
 

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   useNodesState,
   useEdgesState,
@@ -7,10 +7,8 @@ import {
   Edge,
   Node,
   ReactFlowProvider,
-  useReactFlow,
-  getConnectedEdges,
 } from '@xyflow/react';
-import { Brain, Share2, Download, Info, Plus, Play, Layers, Database, LayoutGrid, Table, Sun, Moon, PanelRightClose, PanelRightOpen, Save, Check, X, Edit3, FlaskConical } from 'lucide-react';
+import { Brain, Plus, Play, Layers, Database, LayoutGrid, Table, Sun, Moon, PanelRightClose, PanelRightOpen, Check, X, Edit3, FlaskConical } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import dagre from 'dagre';
 import Canvas from './components/Canvas';
@@ -97,7 +95,6 @@ function Dashboard() {
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [projectManagerOpen, setProjectManagerOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
-  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editingNameValue, setEditingNameValue] = useState('');
 
@@ -202,7 +199,6 @@ function Dashboard() {
       setCurrentProject(result.data);
       await storageService.setCurrentProjectId(result.data.id);
       setSaveStatus('saved');
-      setLastSaveTime(new Date());
       return result.data;
     } else {
       setSaveStatus('unsaved');
@@ -251,7 +247,6 @@ function Dashboard() {
     // Clear simulation results when loading new project
     setSimulationResults([]);
     setSaveStatus('saved');
-    setLastSaveTime(new Date());
   }, [setNodes, setEdges]);
 
   // Create new empty project
@@ -302,7 +297,6 @@ function Dashboard() {
     // Update save status when auto-save completes
     const unsubscribe = storageService.onSave(() => {
       setSaveStatus('saved');
-      setLastSaveTime(new Date());
     });
     
     return () => unsubscribe();

@@ -12,11 +12,7 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
-  ChevronRight,
-  FileJson,
-  Table,
   Plus,
-  X,
   Edit3,
   Check,
   Sliders,
@@ -34,7 +30,6 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  ReferenceLine,
   Cell,
 } from 'recharts';
 import { cn } from '../lib/utils';
@@ -42,7 +37,6 @@ import {
   SimulationRun,
   compareRuns,
   calculateCentrality,
-  interpretOutput,
   ComparisonResult,
   CentralityAnalysis,
 } from '../lib/experiments';
@@ -72,7 +66,6 @@ const COLORS = [
 const ExperimentsTab: React.FC<ExperimentsTabProps> = ({
   nodes,
   edges,
-  onRunSimulation,
   theme = 'modern',
 }) => {
   const [runs, setRuns] = useState<SimulationRun[]>([]);
@@ -1050,7 +1043,7 @@ const ExperimentsTab: React.FC<ExperimentsTabProps> = ({
                         </tr>
                       </thead>
                       <tbody>
-                        {centrality.concepts.map((c, i) => (
+                        {centrality.concepts.map((c) => (
                           <tr 
                             key={c.id}
                             className={cn(

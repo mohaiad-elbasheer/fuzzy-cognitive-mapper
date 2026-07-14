@@ -32,13 +32,6 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
     return edge?.data?.weight ?? 0;
   };
 
-  const getLinguisticLabel = (weight: number) => {
-    const term = linguisticTerms.reduce((prev, curr) => 
-      Math.abs(curr.value - weight) < Math.abs(prev.value - weight) ? curr : prev
-    );
-    return term.label;
-  };
-
   return (
     <div className={cn(
       "absolute inset-0 flex flex-col overflow-hidden transition-all duration-500",

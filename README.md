@@ -52,6 +52,17 @@ npm run build
 npm run preview
 ```
 
+### Development Scripts
+
+```bash
+npm run lint        # ESLint (typescript-eslint + react-hooks)
+npm run typecheck   # TypeScript type checking
+npm test            # Unit tests (Vitest)
+npm run test:watch  # Unit tests in watch mode
+```
+
+CI runs lint, typecheck, tests, and the production build on every pull request.
+
 ## Usage
 
 1. **Add Concepts** - Click "Add Concept" or use the + button
@@ -67,7 +78,8 @@ npm run preview
 - @xyflow/react (graph visualization)
 - Recharts
 - Tailwind CSS 4
-- Framer Motion
+- Motion (Framer Motion successor)
+- Vitest (unit tests)
 
 ## FCM Theory
 

@@ -3,7 +3,7 @@
  * Designed for scalability: same types work with localStorage, IndexedDB, or cloud storage
  */
 
-import { FCMNode, FCMEdge, LinguisticScalePreset, MembershipFunctionType, ActivationFunction } from '../../types';
+import { LinguisticScalePreset, MembershipFunctionType, ActivationFunction } from '../../types';
 
 /**
  * Project metadata - lightweight info for project listings

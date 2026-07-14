@@ -24,7 +24,7 @@ import {
   DEFAULT_PROJECT_CONFIG,
 } from './types';
 import { localStorageProvider } from './localStorageProvider';
-import { FCMNode, FCMEdge, SimulationResult } from '../../types';
+import { FCMNode, FCMEdge } from '../../types';
 
 // Re-export types for convenience
 export * from './types';

@@ -99,7 +99,7 @@ class ExperimentStore {
     );
     
     // Build history from results - each result is one iteration
-    const history: ConceptState[][] = results.map((iterResult, i) => {
+    const history: ConceptState[][] = results.map((iterResult) => {
       return nodes.map(node => ({
         id: node.id,
         label: node.label,
