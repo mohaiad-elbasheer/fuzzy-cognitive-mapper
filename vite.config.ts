@@ -28,10 +28,21 @@ export default defineConfig(({mode}) => {
       minify: 'esbuild',
       rollupOptions: {
         output: {
-          manualChunks: {
-            vendor: ['react', 'react-dom'],
-            flow: ['@xyflow/react', 'dagre'],
-            charts: ['recharts'],
+          // Function form so every module of a package (including internals
+          // like react/jsx-runtime) lands in the intended chunk; the object
+          // form previously produced an empty "vendor" chunk.
+          manualChunks(id: string) {
+            if (!id.includes('node_modules')) return undefined;
+            if (id.includes('recharts') || id.includes('/d3-') || id.includes('victory')) {
+              return 'charts';
+            }
+            if (id.includes('@xyflow') || id.includes('dagre')) {
+              return 'flow';
+            }
+            if (id.includes('lucide-react') || id.includes('motion')) {
+              return 'ui';
+            }
+            return 'vendor';
           },
         },
       },
