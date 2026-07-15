@@ -53,7 +53,7 @@ const InferenceTab: React.FC<InferenceTabProps> = ({ nodes, edges, results, them
     return (
       <div className={cn(
         "absolute inset-0 flex flex-col items-center justify-center p-10 text-center transition-all duration-500",
-        theme === 'modern' ? "bg-[#0a0a14] font-mono" : "bg-[#f5f0e8] font-serif"
+        theme === 'modern' ? "bg-[#0a0a14]" : "bg-[#f5f0e8]"
       )}>
         <div className={cn(
           "w-16 h-16 rounded-2xl flex items-center justify-center mb-6 border transition-colors duration-500",
@@ -62,11 +62,11 @@ const InferenceTab: React.FC<InferenceTabProps> = ({ nodes, edges, results, them
           <Brain className={cn("w-8 h-8", theme === 'modern' ? "text-white/20" : "text-slate-300")} />
         </div>
         <h2 className={cn(
-          "text-xl font-black uppercase tracking-tighter mb-2 transition-colors duration-500",
+          "text-xl font-bold uppercase tracking-tight mb-2 transition-colors duration-500",
           theme === 'modern' ? "text-white" : "text-slate-900"
         )}>Inference Engine Idle</h2>
         <p className={cn(
-          "text-xs font-black uppercase tracking-[0.3em] max-w-md leading-relaxed transition-colors duration-500",
+          "text-xs font-bold uppercase tracking-wide max-w-md leading-relaxed transition-colors duration-500",
           theme === 'modern' ? "text-white/30" : "text-slate-400"
         )}>
           Run a simulation to generate a semantic analysis of your causal model's behavior and equilibrium.
@@ -85,7 +85,7 @@ const InferenceTab: React.FC<InferenceTabProps> = ({ nodes, edges, results, them
   return (
     <div className={cn(
       "absolute inset-0 flex flex-col overflow-hidden transition-all duration-500",
-      theme === 'modern' ? "bg-[#0a0a14] font-mono" : "bg-[#f5f0e8] font-serif"
+      theme === 'modern' ? "bg-[#0a0a14]" : "bg-[#f5f0e8]"
     )}>
       {/* Header */}
       <div className={cn(
@@ -101,11 +101,11 @@ const InferenceTab: React.FC<InferenceTabProps> = ({ nodes, edges, results, them
           </div>
           <div>
             <h2 className={cn(
-              "text-lg font-black uppercase tracking-tighter transition-colors duration-500",
+              "text-lg font-bold uppercase tracking-tight transition-colors duration-500",
               theme === 'modern' ? "text-white" : "text-slate-900"
             )}>Inference Report</h2>
             <p className={cn(
-              "text-[10px] font-black uppercase tracking-[0.3em] transition-colors duration-500",
+              "text-xs font-bold uppercase tracking-wide transition-colors duration-500",
               theme === 'modern' ? "text-white/30" : "text-slate-400"
             )}>Semantic Decision Support</p>
           </div>
@@ -118,7 +118,7 @@ const InferenceTab: React.FC<InferenceTabProps> = ({ nodes, edges, results, them
             : (theme === 'modern' ? "bg-amber-500/5 border-amber-500/20 text-amber-400" : "bg-amber-50 border-amber-200 text-amber-600")
         )}>
           {analysis.isStable ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-          <span className="text-[10px] font-black uppercase tracking-widest">
+          <span className="text-xs font-bold uppercase tracking-wide">
             {analysis.isStable ? `Converged in ${analysis.iterations} steps` : "Non-Convergent System"}
           </span>
         </div>
@@ -128,7 +128,7 @@ const InferenceTab: React.FC<InferenceTabProps> = ({ nodes, edges, results, them
         {/* Concept Shifts */}
         <div className="space-y-6">
           <h3 className={cn(
-            "text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-2 transition-colors duration-500",
+            "text-xs font-bold uppercase tracking-wide flex items-center gap-2 transition-colors duration-500",
             theme === 'modern' ? "text-white/40" : "text-slate-500"
           )}>
             <Target className="w-3 h-3" />
@@ -143,11 +143,11 @@ const InferenceTab: React.FC<InferenceTabProps> = ({ nodes, edges, results, them
               )}>
                 <div className="flex items-center justify-between mb-4">
                   <span className={cn(
-                    "text-[11px] font-black uppercase tracking-wider transition-colors duration-500",
+                    "text-xs font-bold uppercase tracking-wider transition-colors duration-500",
                     theme === 'modern' ? "text-white" : "text-slate-900"
                   )}>{node.label}</span>
                   <div className={cn(
-                    "flex items-center gap-1.5 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors duration-500",
+                    "flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors duration-500",
                     node.trend === 'up' ? (theme === 'modern' ? "text-emerald-400 bg-emerald-500/10" : "text-emerald-700 bg-emerald-100") :
                     node.trend === 'down' ? (theme === 'modern' ? "text-red-400 bg-red-500/10" : "text-red-700 bg-red-100") :
                     (theme === 'modern' ? "text-white/40 bg-white/5" : "text-slate-400 bg-slate-200")
@@ -162,7 +162,7 @@ const InferenceTab: React.FC<InferenceTabProps> = ({ nodes, edges, results, them
                 <div className="flex items-end gap-4">
                   <div className="flex-1 space-y-2">
                     <div className={cn(
-                      "flex justify-between text-[9px] font-black uppercase tracking-widest transition-colors duration-500",
+                      "flex justify-between text-xs font-bold uppercase tracking-wide transition-colors duration-500",
                       theme === 'modern' ? "text-white/20" : "text-slate-400"
                     )}>
                       <span>Initial: {node.start.toFixed(2)}</span>
@@ -192,7 +192,7 @@ const InferenceTab: React.FC<InferenceTabProps> = ({ nodes, edges, results, them
                   </div>
                   <div className="text-right">
                     <span className={cn(
-                      "text-lg font-black tracking-tighter transition-colors duration-500",
+                      "text-lg font-bold tracking-tight transition-colors duration-500",
                       node.trend === 'up' ? (theme === 'modern' ? "text-emerald-400" : "text-emerald-700") :
                       node.trend === 'down' ? (theme === 'modern' ? "text-red-400" : "text-red-700") :
                       (theme === 'modern' ? "text-white/40" : "text-slate-400")
@@ -209,7 +209,7 @@ const InferenceTab: React.FC<InferenceTabProps> = ({ nodes, edges, results, them
         {/* Causal Insights */}
         <div className="space-y-6">
           <h3 className={cn(
-            "text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-2 transition-colors duration-500",
+            "text-xs font-bold uppercase tracking-wide flex items-center gap-2 transition-colors duration-500",
             theme === 'modern' ? "text-white/40" : "text-slate-500"
           )}>
             <Info className="w-3 h-3" />
@@ -230,7 +230,7 @@ const InferenceTab: React.FC<InferenceTabProps> = ({ nodes, edges, results, them
                 "text-xs leading-relaxed transition-colors duration-500",
                 theme === 'modern' ? "text-white/60" : "text-slate-600"
               )}>
-                Based on the inference engine, the system reached equilibrium after <span className={cn("font-black", theme === 'modern' ? "text-white" : "text-slate-900")}>{analysis.iterations} iterations</span>. 
+                Based on the inference engine, the system reached equilibrium after <span className={cn("font-bold", theme === 'modern' ? "text-white" : "text-slate-900")}>{analysis.iterations} iterations</span>. 
                 The primary drivers of this state are:
               </p>
               
@@ -244,23 +244,23 @@ const InferenceTab: React.FC<InferenceTabProps> = ({ nodes, edges, results, them
                       theme === 'modern' ? "bg-white/5 border-white/5" : "bg-white border-slate-100 shadow-sm"
                     )}>
                       <div className={cn(
-                        "w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black transition-colors duration-500",
+                        "w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold transition-colors duration-500",
                         theme === 'modern' ? "bg-white/5 text-white/20" : "bg-slate-50 text-slate-400"
                       )}>
                         0{i + 1}
                       </div>
                       <div className="flex-1">
                         <p className={cn(
-                          "text-[10px] font-black uppercase tracking-wider mb-1 transition-colors duration-500",
+                          "text-xs font-bold uppercase tracking-wider mb-1 transition-colors duration-500",
                           theme === 'modern' ? "text-white/80" : "text-slate-800"
                         )}>
                           {source?.label} <span className={cn("mx-1", theme === 'modern' ? "text-white/20" : "text-slate-300")}>→</span> {target?.label}
                         </p>
                         <p className={cn(
-                          "text-[9px] leading-relaxed transition-colors duration-500",
+                          "text-xs leading-relaxed transition-colors duration-500",
                           theme === 'modern' ? "text-white/40" : "text-slate-500"
                         )}>
-                          Has a <span className={cn("font-black", edge.weight > 0 ? (theme === 'modern' ? "text-emerald-400" : "text-emerald-700") : (theme === 'modern' ? "text-red-400" : "text-red-700"))}>
+                          Has a <span className={cn("font-bold", edge.weight > 0 ? (theme === 'modern' ? "text-emerald-400" : "text-emerald-700") : (theme === 'modern' ? "text-red-400" : "text-red-700"))}>
                             {getLinguisticWeight(edge.weight)}
                           </span> influence, significantly impacting the final convergence of the system.
                         </p>
@@ -276,26 +276,26 @@ const InferenceTab: React.FC<InferenceTabProps> = ({ nodes, edges, results, them
               theme === 'modern' ? "border-white/5" : "border-slate-200"
             )}>
               <h4 className={cn(
-                "text-[9px] font-black uppercase tracking-widest mb-4 flex items-center gap-2 transition-colors duration-500",
+                "text-xs font-bold uppercase tracking-wide mb-4 flex items-center gap-2 transition-colors duration-500",
                 theme === 'modern' ? "text-emerald-400" : "text-emerald-700"
               )}>
                 <AlertCircle className="w-3 h-3" />
                 Strategic Recommendation
               </h4>
               <p className={cn(
-                "text-[11px] italic leading-relaxed transition-colors duration-500",
+                "text-xs italic leading-relaxed transition-colors duration-500",
                 theme === 'modern' ? "text-white/50" : "text-slate-600"
               )}>
                 {analysis.nodeChanges.some(n => n.trend === 'down') ? (
                   <>
-                    "To mitigate the decline in <span className={cn("font-black not-italic", theme === 'modern' ? "text-white" : "text-slate-900")}>{analysis.nodeChanges.find(n => n.trend === 'down')?.label}</span>, 
-                    consider reversing or weakening the negative influence from <span className={cn("font-black not-italic", theme === 'modern' ? "text-white" : "text-slate-900")}>{nodes.find(n => n.id === edges.find(e => e.target === analysis.nodeChanges.find(nc => nc.trend === 'down')?.id && e.weight < 0)?.source)?.label || 'external factors'}</span>."
+                    "To mitigate the decline in <span className={cn("font-bold not-italic", theme === 'modern' ? "text-white" : "text-slate-900")}>{analysis.nodeChanges.find(n => n.trend === 'down')?.label}</span>, 
+                    consider reversing or weakening the negative influence from <span className={cn("font-bold not-italic", theme === 'modern' ? "text-white" : "text-slate-900")}>{nodes.find(n => n.id === edges.find(e => e.target === analysis.nodeChanges.find(nc => nc.trend === 'down')?.id && e.weight < 0)?.source)?.label || 'external factors'}</span>."
                   </>
                 ) : (
                   <>
-                    "The system shows strong positive synergy. To further accelerate <span className={cn("font-black not-italic", theme === 'modern' ? "text-white" : "text-slate-900")}>{analysis.nodeChanges.sort((a,b) => b.end - a.end)[0].label}</span>, 
-                    focus on strengthening the <span className={cn("font-black not-italic", theme === 'modern' ? "text-emerald-400" : "text-emerald-700")}>{getLinguisticWeight(analysis.influentialEdges[0].weight)}</span> link from 
-                    <span className={cn("font-black not-italic", theme === 'modern' ? "text-white" : "text-slate-900")}>{nodes.find(n => n.id === analysis.influentialEdges[0].source)?.label}</span>."
+                    "The system shows strong positive synergy. To further accelerate <span className={cn("font-bold not-italic", theme === 'modern' ? "text-white" : "text-slate-900")}>{analysis.nodeChanges.sort((a,b) => b.end - a.end)[0].label}</span>, 
+                    focus on strengthening the <span className={cn("font-bold not-italic", theme === 'modern' ? "text-emerald-400" : "text-emerald-700")}>{getLinguisticWeight(analysis.influentialEdges[0].weight)}</span> link from 
+                    <span className={cn("font-bold not-italic", theme === 'modern' ? "text-white" : "text-slate-900")}>{nodes.find(n => n.id === analysis.influentialEdges[0].source)?.label}</span>."
                   </>
                 )}
               </p>

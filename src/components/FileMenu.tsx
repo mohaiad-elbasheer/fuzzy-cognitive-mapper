@@ -125,7 +125,7 @@ const FileMenu: React.FC<FileMenuProps> = ({
   );
 
   const shortcutClass = cn(
-    "ml-auto text-[10px] font-mono",
+    "ml-auto text-xs font-mono",
     theme === 'modern' ? "text-white/30" : "text-slate-400"
   );
 
@@ -229,7 +229,7 @@ const FileMenu: React.FC<FileMenuProps> = ({
                           <div className="flex-1 min-w-0 text-left">
                             <div className="truncate">{project.name}</div>
                             <div className={cn(
-                              "text-[10px]",
+                              "text-xs",
                               theme === 'modern' ? "text-white/30" : "text-slate-400"
                             )}>
                               {project.nodeCount} concepts · {formatDate(project.updatedAt)}

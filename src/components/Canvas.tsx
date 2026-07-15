@@ -206,7 +206,7 @@ const Canvas: React.FC<CanvasProps> = ({
             {/* Floating Tooltip */}
             {!isExporting && (
               <div className={cn(
-                "absolute left-full ml-3 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest whitespace-nowrap opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 pointer-events-none transition-all duration-300 shadow-2xl border",
+                "absolute left-full ml-3 px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide whitespace-nowrap opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 pointer-events-none transition-all duration-300 shadow-2xl border",
                 theme === 'modern' 
                   ? "bg-[#0a0a14] text-white border-white/10" 
                   : "bg-white text-slate-900 border-slate-200"
@@ -234,7 +234,7 @@ const Canvas: React.FC<CanvasProps> = ({
 
             {!isExporting && (
               <div className={cn(
-                "absolute left-full ml-3 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest whitespace-nowrap opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 pointer-events-none transition-all duration-300 shadow-2xl border",
+                "absolute left-full ml-3 px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide whitespace-nowrap opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 pointer-events-none transition-all duration-300 shadow-2xl border",
                 theme === 'modern' 
                   ? "bg-[#0a0a14] text-white border-white/10" 
                   : "bg-white text-slate-900 border-slate-200"
@@ -244,21 +244,6 @@ const Canvas: React.FC<CanvasProps> = ({
             )}
           </button>
 
-          <div className={cn(
-            "flex items-center gap-3 px-3 py-2 rounded-xl border backdrop-blur-md shadow-xl transition-all duration-500",
-            theme === 'modern' ? "bg-[#0a0a14]/80 border-white/10" : "bg-white/80 border-slate-200"
-          )}>
-            <div className={cn(
-              "w-1.5 h-1.5 rounded-full transition-colors duration-500",
-              theme === 'modern' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-emerald-600"
-            )} />
-            <span className={cn(
-              "text-[9px] font-black uppercase tracking-[0.2em] transition-colors duration-500",
-              theme === 'modern' ? "text-white/40" : "text-slate-400"
-            )}>
-              Neural Topology
-            </span>
-          </div>
         </Panel>
       </ReactFlow>
     </div>

@@ -34,13 +34,13 @@ const SimulationChart: React.FC<SimulationChartProps> = ({ data, nodes, theme = 
           <Activity className={cn("w-6 h-6", theme === 'modern' ? "text-white/20" : "text-slate-300")} />
         </div>
         <p className={cn(
-          "text-xs font-black uppercase tracking-widest transition-colors duration-500",
+          "text-xs font-bold uppercase tracking-wide transition-colors duration-500",
           theme === 'modern' ? "text-white/40" : "text-slate-500"
         )}>
           No Simulation Data
         </p>
         <p className={cn(
-          "text-[10px] mt-2 max-w-[200px] transition-colors duration-500",
+          "text-xs mt-2 max-w-[200px] transition-colors duration-500",
           theme === 'modern' ? "text-white/20" : "text-slate-400"
         )}>
           Initialize concepts and trigger the inference engine to visualize convergence.
@@ -64,11 +64,11 @@ const SimulationChart: React.FC<SimulationChartProps> = ({ data, nodes, theme = 
   return (
     <div className={cn(
       "h-full w-full p-6 rounded-2xl border shadow-2xl transition-all duration-500",
-      theme === 'modern' ? "bg-[#0a0a14] border-white/10 font-mono" : "bg-white border-slate-200 font-serif"
+      theme === 'modern' ? "bg-[#0a0a14] border-white/10" : "bg-white border-slate-200"
     )}>
       <div className="flex items-center justify-between mb-8">
         <h3 className={cn(
-          "text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-3 transition-colors duration-500",
+          "text-xs font-bold uppercase tracking-wide flex items-center gap-3 transition-colors duration-500",
           theme === 'modern' ? "text-white/40" : "text-slate-500"
         )}>
           <div className={cn(
@@ -77,7 +77,7 @@ const SimulationChart: React.FC<SimulationChartProps> = ({ data, nodes, theme = 
           )} />
           Convergence Analysis
           <span className={cn(
-            "ml-4 text-[8px] lowercase font-medium tracking-normal normal-case transition-opacity duration-500",
+            "ml-4 text-xs lowercase font-medium tracking-normal normal-case transition-opacity duration-500",
             theme === 'modern' ? "opacity-50" : "opacity-70"
           )}>
             Visualizes system stability and concept equilibrium over time.
@@ -90,7 +90,7 @@ const SimulationChart: React.FC<SimulationChartProps> = ({ data, nodes, theme = 
               theme === 'modern' ? "bg-emerald-500/50" : "bg-emerald-600/30"
             )} />
             <span className={cn(
-              "text-[9px] font-bold uppercase transition-colors duration-500",
+              "text-xs font-bold uppercase transition-colors duration-500",
               theme === 'modern' ? "text-white/20" : "text-slate-400"
             )}>Stable</span>
           </div>
@@ -100,13 +100,13 @@ const SimulationChart: React.FC<SimulationChartProps> = ({ data, nodes, theme = 
       <div className="h-[calc(100%-60px)] w-full relative">
         {/* Axis Labels */}
         <div className={cn(
-          "absolute -left-8 top-1/2 -translate-y-1/2 -rotate-90 text-[8px] font-black uppercase tracking-[0.4em] pointer-events-none transition-colors duration-500",
+          "absolute -left-8 top-1/2 -translate-y-1/2 -rotate-90 text-xs font-bold uppercase tracking-wide pointer-events-none transition-colors duration-500",
           theme === 'modern' ? "text-white/10" : "text-slate-300"
         )}>
           Activation Level ({hasNegative ? '-1.0 - 1.0' : '0.0 - 1.0'})
         </div>
         <div className={cn(
-          "absolute -bottom-4 left-1/2 -translate-x-1/2 text-[8px] font-black uppercase tracking-[0.4em] pointer-events-none transition-colors duration-500",
+          "absolute -bottom-4 left-1/2 -translate-x-1/2 text-xs font-bold uppercase tracking-wide pointer-events-none transition-colors duration-500",
           theme === 'modern' ? "text-white/10" : "text-slate-300"
         )}>
           Inference Iterations

@@ -142,7 +142,7 @@ const DataInspector: React.FC<DataInspectorProps> = ({
   return (
     <div className={cn(
       "absolute inset-0 p-10 overflow-hidden flex flex-col transition-all duration-500",
-      theme === 'modern' ? "bg-[#0a0a14] font-mono" : "bg-[#f5f0e8] font-serif"
+      theme === 'modern' ? "bg-[#0a0a14]" : "bg-[#f5f0e8]"
     )}>
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
@@ -154,11 +154,11 @@ const DataInspector: React.FC<DataInspectorProps> = ({
           </div>
           <div>
             <h2 className={cn(
-              "text-lg font-black uppercase tracking-tighter transition-colors duration-500",
+              "text-lg font-bold uppercase tracking-tight transition-colors duration-500",
               theme === 'modern' ? "text-white" : "text-slate-900"
             )}>Model Definition</h2>
             <p className={cn(
-              "text-[10px] font-black uppercase tracking-[0.3em] transition-colors duration-500",
+              "text-xs font-bold uppercase tracking-wide transition-colors duration-500",
               theme === 'modern' ? "text-white/30" : "text-slate-400"
             )}>
               {mode === 'view' ? 'Live JSON View' : 'Edit Mode - Modify & Import'}
@@ -175,7 +175,7 @@ const DataInspector: React.FC<DataInspectorProps> = ({
             <button
               onClick={() => setMode('view')}
               className={cn(
-                "flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all",
                 mode === 'view'
                   ? (theme === 'modern' ? "bg-white/10 text-emerald-400" : "bg-emerald-50 text-emerald-600")
                   : (theme === 'modern' ? "text-white/40 hover:text-white/60" : "text-slate-400 hover:text-slate-600")
@@ -187,7 +187,7 @@ const DataInspector: React.FC<DataInspectorProps> = ({
             <button
               onClick={() => setMode('edit')}
               className={cn(
-                "flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all",
                 mode === 'edit'
                   ? (theme === 'modern' ? "bg-white/10 text-emerald-400" : "bg-emerald-50 text-emerald-600")
                   : (theme === 'modern' ? "text-white/40 hover:text-white/60" : "text-slate-400 hover:text-slate-600")
@@ -202,7 +202,7 @@ const DataInspector: React.FC<DataInspectorProps> = ({
           <button
             onClick={handleCopy}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 border rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+              "flex items-center gap-2 px-4 py-2 border rounded-xl text-xs font-bold uppercase tracking-wide transition-all",
               theme === 'modern' ? "bg-white/5 hover:bg-white/10 border-white/10 text-white/60 hover:text-white" : "bg-white hover:bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-900 shadow-sm"
             )}
           >
@@ -214,7 +214,7 @@ const DataInspector: React.FC<DataInspectorProps> = ({
             <button
               onClick={handleApplyChanges}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wide transition-all",
                 theme === 'modern' 
                   ? "bg-emerald-500 text-[#0a0a14] hover:bg-emerald-400" 
                   : "bg-emerald-600 text-white hover:bg-emerald-700"
@@ -300,7 +300,7 @@ const DataInspector: React.FC<DataInspectorProps> = ({
         theme === 'modern' ? "bg-white/5 border-white/10" : "bg-white border-slate-200"
       )}>
         <p className={cn(
-          "text-[10px] leading-relaxed",
+          "text-xs leading-relaxed",
           theme === 'modern' ? "text-white/40" : "text-slate-500"
         )}>
           {mode === 'view' ? (

@@ -553,7 +553,7 @@ function Dashboard() {
   return (
     <div className={cn(
       "flex h-screen w-full overflow-hidden transition-colors duration-500 antialiased",
-      theme === 'modern' ? "bg-[#0a0a14] text-white" : "bg-[#f5f0e8] text-slate-900 font-serif"
+      theme === 'modern' ? "bg-[#0a0a14] text-white" : "bg-[#f5f0e8] text-slate-900"
     )}>
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 relative">
