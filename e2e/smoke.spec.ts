@@ -10,6 +10,8 @@ import { test, expect, Page } from '@playwright/test';
  */
 
 const openApp = async (page: Page) => {
+  // Skip the first-use walkthrough so it never intercepts test clicks
+  await page.addInitScript(() => localStorage.setItem('fcm_walkthrough_done', '1'));
   await page.goto('/');
   // The sample map renders three concepts once the app is ready
   await expect(page.locator('.react-flow__node').first()).toBeVisible({ timeout: 15_000 });
@@ -47,12 +49,11 @@ test('add and connect concepts', async ({ page }) => {
   await page.getByRole('button', { name: 'Add Concept' }).click();
   await expect(page.locator('.react-flow__node')).toHaveCount(nodesBefore + 2);
 
-  // Connect them through the sidebar's connection flow
-  const linkButtons = page.locator('aside, div').getByRole('button').filter({ has: page.locator('svg.lucide-link') });
-  await linkButtons.last().click();
-  const targetSelect = page.locator('select').filter({ hasText: 'Select Target...' }).first();
+  // The newest concept is auto-selected; connect it via the inspector
+  const targetSelect = page.getByLabel('Connection target');
+  await expect(targetSelect).toBeVisible();
   await targetSelect.selectOption({ index: 1 });
-  await page.getByRole('button', { name: 'Connect' }).click();
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
   await expect(page.locator('.react-flow__edge')).toHaveCount(edgesBefore + 1);
 });
 

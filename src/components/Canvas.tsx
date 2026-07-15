@@ -24,8 +24,8 @@ interface CanvasProps {
   onNodesChange: any;
   onEdgesChange: any;
   onConnect: (connection: Connection) => void;
-  onEdgeClick: (event: React.MouseEvent, edge: Edge) => void;
-  onNodeClick: (event: React.MouseEvent, node: Node) => void;
+  onEdgeClick?: (event: React.MouseEvent, edge: Edge) => void;
+  onNodeClick?: (event: React.MouseEvent, node: Node) => void;
   onNodeDragStop?: (event: React.MouseEvent, node: Node) => void;
   nodeTypes?: any;
   edgeTypes?: any;
@@ -165,6 +165,7 @@ const Canvas: React.FC<CanvasProps> = ({
         edgeTypes={edgeTypes}
         defaultEdgeOptions={edgeOptions}
         fitView
+        fitViewOptions={{ padding: 0.2 }}
         snapToGrid
         snapGrid={[20, 20]}
         colorMode={theme === 'modern' ? 'dark' : 'light'}
