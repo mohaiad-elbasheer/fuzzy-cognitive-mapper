@@ -9,10 +9,13 @@ import {
   FileJson,
   Trash2,
   ChevronRight,
+  Braces,
+  Sparkles,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { storageService, Project, ProjectMeta } from '../lib/storage';
+import { SAMPLE_MODELS, SampleModel } from '../lib/samples';
 
 interface FileMenuProps {
   currentProject: Project | null;
@@ -21,6 +24,8 @@ interface FileMenuProps {
   onSaveProject: () => Promise<Project | null>;
   onExportProject: () => void;
   onImportFile: (file: File) => Promise<void>;
+  onOpenDataEditor: () => void;
+  onLoadSample: (sample: SampleModel) => void;
   theme?: 'modern' | 'academic';
 }
 
@@ -31,11 +36,14 @@ const FileMenu: React.FC<FileMenuProps> = ({
   onSaveProject,
   onExportProject,
   onImportFile,
+  onOpenDataEditor,
+  onLoadSample,
   theme = 'modern',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [recentProjects, setRecentProjects] = useState<ProjectMeta[]>([]);
   const [showRecent, setShowRecent] = useState(false);
+  const [showSamples, setShowSamples] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -117,7 +125,7 @@ const FileMenu: React.FC<FileMenuProps> = ({
   );
 
   const shortcutClass = cn(
-    "ml-auto text-[10px] font-mono",
+    "ml-auto text-xs font-mono",
     theme === 'modern' ? "text-white/30" : "text-slate-400"
   );
 
@@ -165,7 +173,7 @@ const FileMenu: React.FC<FileMenuProps> = ({
             >
               <FilePlus className="w-4 h-4" />
               New Project
-              <span className={shortcutClass}>Ctrl+N</span>
+              <span className={shortcutClass}>Ctrl+Alt+N</span>
             </button>
 
             <div className={cn("my-1 h-px", theme === 'modern' ? "bg-white/5" : "bg-slate-100")} />
@@ -221,7 +229,7 @@ const FileMenu: React.FC<FileMenuProps> = ({
                           <div className="flex-1 min-w-0 text-left">
                             <div className="truncate">{project.name}</div>
                             <div className={cn(
-                              "text-[10px]",
+                              "text-xs",
                               theme === 'modern' ? "text-white/30" : "text-slate-400"
                             )}>
                               {project.nodeCount} concepts · {formatDate(project.updatedAt)}
@@ -256,6 +264,60 @@ const FileMenu: React.FC<FileMenuProps> = ({
               <span className={shortcutClass}>Ctrl+O</span>
             </button>
 
+            {/* Open Sample - Submenu */}
+            <div
+              className="relative"
+              onMouseEnter={() => setShowSamples(true)}
+              onMouseLeave={() => setShowSamples(false)}
+            >
+              <button className={cn(menuItemClass, "justify-between")}>
+                <span className="flex items-center gap-3">
+                  <Sparkles className="w-4 h-4" />
+                  Open Sample
+                </span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+
+              <AnimatePresence>
+                {showSamples && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -4 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -4 }}
+                    className={cn(
+                      "absolute left-full top-0 ml-1 min-w-[260px] p-1.5 rounded-xl border shadow-xl",
+                      theme === 'modern' 
+                        ? "bg-[#0f0f1a] border-white/10" 
+                        : "bg-white border-slate-200"
+                    )}
+                  >
+                    {SAMPLE_MODELS.map((sample) => (
+                      <button
+                        key={sample.id}
+                        onClick={() => {
+                          onLoadSample(sample);
+                          setIsOpen(false);
+                          setShowSamples(false);
+                        }}
+                        className={menuItemClass}
+                      >
+                        <Sparkles className="w-4 h-4 shrink-0" />
+                        <div className="flex-1 min-w-0 text-left">
+                          <div className="truncate">{sample.name}</div>
+                          <div className={cn(
+                            "text-xs truncate",
+                            theme === 'modern' ? "text-white/30" : "text-slate-400"
+                          )}>
+                            {sample.description}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             <div className={cn("my-1 h-px", theme === 'modern' ? "bg-white/5" : "bg-slate-100")} />
 
             {/* Save */}
@@ -275,6 +337,17 @@ const FileMenu: React.FC<FileMenuProps> = ({
             >
               <Download className="w-4 h-4" />
               Export as JSON...
+            </button>
+
+            <div className={cn("my-1 h-px", theme === 'modern' ? "bg-white/5" : "bg-slate-100")} />
+
+            {/* Raw data editor (formerly the Data tab) */}
+            <button
+              onClick={() => { onOpenDataEditor(); setIsOpen(false); }}
+              className={menuItemClass}
+            >
+              <Braces className="w-4 h-4" />
+              Edit Model Data (JSON)...
             </button>
           </motion.div>
         )}

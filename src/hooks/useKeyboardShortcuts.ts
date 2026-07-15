@@ -6,6 +6,12 @@ interface ShortcutHandlers {
   copy: () => void;
   paste: () => void;
   deleteSelected: () => void;
+  /** Ctrl/Cmd+S */
+  save?: () => void;
+  /** Ctrl/Cmd+O */
+  openFile?: () => void;
+  /** Ctrl/Cmd+Alt+N (plain Ctrl+N is reserved by browsers) */
+  newProject?: () => void;
 }
 
 const isTextInputFocused = () => {
@@ -14,27 +20,54 @@ const isTextInputFocused = () => {
 };
 
 /**
- * Global editor shortcuts: Ctrl/Cmd+Z (undo), Ctrl/Cmd+Y (redo),
- * Ctrl/Cmd+C/V (copy/paste), Delete/Backspace (delete selection).
- * All shortcuts are suppressed while a text field is focused so native
- * text editing keeps working.
+ * Global editor shortcuts. Graph-editing shortcuts (undo/copy/delete...) are
+ * suppressed while a text field is focused so native text editing keeps
+ * working; project shortcuts (save/open/new) work everywhere.
  */
-export function useKeyboardShortcuts({ undo, redo, copy, paste, deleteSelected }: ShortcutHandlers) {
+export function useKeyboardShortcuts({
+  undo,
+  redo,
+  copy,
+  paste,
+  deleteSelected,
+  save,
+  openFile,
+  newProject,
+}: ShortcutHandlers) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isCtrl = e.ctrlKey || e.metaKey;
+      const key = e.key.toLowerCase();
 
+      // Project-level shortcuts work regardless of focus
+      if (isCtrl && key === 's' && save) {
+        e.preventDefault();
+        save();
+        return;
+      }
+      if (isCtrl && key === 'o' && openFile) {
+        e.preventDefault();
+        openFile();
+        return;
+      }
+      if (isCtrl && e.altKey && key === 'n' && newProject) {
+        e.preventDefault();
+        newProject();
+        return;
+      }
+
+      // Let native text-editing shortcuts work inside inputs and textareas
       if (isTextInputFocused()) return;
 
-      if (isCtrl && e.key === 'z') {
+      if (isCtrl && key === 'z' && !e.shiftKey) {
         e.preventDefault();
         undo();
-      } else if (isCtrl && e.key === 'y') {
+      } else if (isCtrl && (key === 'y' || (key === 'z' && e.shiftKey))) {
         e.preventDefault();
         redo();
-      } else if (isCtrl && e.key === 'c') {
+      } else if (isCtrl && key === 'c') {
         copy();
-      } else if (isCtrl && e.key === 'v') {
+      } else if (isCtrl && key === 'v') {
         paste();
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
         deleteSelected();
@@ -43,5 +76,5 @@ export function useKeyboardShortcuts({ undo, redo, copy, paste, deleteSelected }
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [undo, redo, copy, paste, deleteSelected]);
+  }, [undo, redo, copy, paste, deleteSelected, save, openFile, newProject]);
 }

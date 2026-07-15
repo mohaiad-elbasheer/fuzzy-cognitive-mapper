@@ -4,6 +4,7 @@ import { Plus, Trash2, Info, ArrowRight, Settings2, Languages, Hash, ChevronDown
 import { cn } from '../lib/utils';
 import { LinguisticTerm, LINGUISTIC_TERMS, FCMNode, FCMEdge } from '../types';
 import { matrixToCSV, parseMatrixCSV } from '../lib/csv';
+import { toast } from '../lib/toast';
 
 interface MatrixEditorProps {
   nodes: Node[];
@@ -30,6 +31,14 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
 }) => {
   const [inputMode, setInputMode] = useState<'numeric' | 'linguistic'>('numeric');
   const [importError, setImportError] = useState<string | null>(null);
+
+  // Free-typed numbers can be empty ("" -> NaN) or out of range; ignore the
+  // former and clamp the latter so invalid values never reach the model.
+  const sanitizeNumber = (raw: string, min: number, max: number): number | null => {
+    const value = parseFloat(raw);
+    if (Number.isNaN(value)) return null;
+    return Math.min(max, Math.max(min, value));
+  };
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExportCSV = () => {
@@ -62,6 +71,7 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
       const { nodes: importedNodes, edges: importedEdges } = parseMatrixCSV(text);
       setImportError(null);
       onImportData?.(importedNodes, importedEdges);
+      toast.success(`Imported ${importedNodes.length} concepts and ${importedEdges.length} connections from CSV`);
     } catch (err) {
       setImportError(err instanceof Error ? err.message : 'Failed to parse CSV');
     }
@@ -75,7 +85,7 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
   return (
     <div className={cn(
       "absolute inset-0 flex flex-col overflow-hidden transition-all duration-500",
-      theme === 'modern' ? "bg-[#0a0a14] font-mono" : "bg-[#f5f0e8] font-serif"
+      theme === 'modern' ? "bg-[#0a0a14]" : "bg-[#f5f0e8]"
     )}>
       {/* Header */}
       <div className={cn(
@@ -91,11 +101,11 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
           </div>
           <div>
             <h2 className={cn(
-              "text-lg font-black uppercase tracking-tighter transition-colors duration-500",
+              "text-lg font-bold uppercase tracking-tight transition-colors duration-500",
               theme === 'modern' ? "text-white" : "text-slate-900"
             )}>Causal Matrix</h2>
             <p className={cn(
-              "text-[10px] font-black uppercase tracking-[0.3em] transition-colors duration-500",
+              "text-xs font-bold uppercase tracking-wide transition-colors duration-500",
               theme === 'modern' ? "text-white/30" : "text-slate-400"
             )}>Direct Topology Configuration</p>
           </div>
@@ -109,7 +119,7 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
             <button 
               onClick={() => setInputMode('numeric')}
               className={cn(
-                "flex items-center gap-2 px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                "flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all",
                 inputMode === 'numeric' 
                   ? (theme === 'modern' ? "bg-white/10 text-emerald-400 shadow-sm" : "bg-white text-emerald-600 shadow-sm border border-slate-200") 
                   : (theme === 'modern' ? "text-white/40 hover:text-white/60" : "text-slate-400 hover:text-slate-600")
@@ -121,7 +131,7 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
             <button 
               onClick={() => setInputMode('linguistic')}
               className={cn(
-                "flex items-center gap-2 px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                "flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all",
                 inputMode === 'linguistic' 
                   ? (theme === 'modern' ? "bg-white/10 text-emerald-400 shadow-sm" : "bg-white text-emerald-600 shadow-sm border border-slate-200") 
                   : (theme === 'modern' ? "text-white/40 hover:text-white/60" : "text-slate-400 hover:text-slate-600")
@@ -148,7 +158,7 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
               onClick={() => fileInputRef.current?.click()}
               title="Import adjacency matrix from CSV (replaces the current map)"
               className={cn(
-                "flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
+                "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all border",
                 theme === 'modern' ? "bg-white/5 text-white/60 border-white/10 hover:bg-white/10 hover:text-white" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
               )}
             >
@@ -161,7 +171,7 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
             disabled={nodes.length === 0}
             title="Export adjacency matrix as CSV"
             className={cn(
-              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border disabled:opacity-40",
+              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all border disabled:opacity-40",
               theme === 'modern' ? "bg-white/5 text-white/60 border-white/10 hover:bg-white/10 hover:text-white" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
             )}
           >
@@ -171,7 +181,7 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
           <button
             onClick={onAddNode}
             className={cn(
-              "flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm",
+              "flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all shadow-sm",
               theme === 'modern' ? "bg-emerald-500 text-[#0a0a14] hover:bg-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.2)]" : "bg-emerald-600 text-white hover:bg-emerald-700"
             )}
           >
@@ -202,7 +212,7 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
                   theme === 'modern' ? "bg-[#0a0a14] border-white/10" : "bg-white border-slate-200"
                 )}>
                   <div className={cn(
-                    "flex items-center justify-between text-[9px] font-black uppercase tracking-[0.2em] transition-colors duration-500",
+                    "flex items-center justify-between text-xs font-bold uppercase tracking-wide transition-colors duration-500",
                     theme === 'modern' ? "text-white/20" : "text-slate-400"
                   )}>
                     <span>Source \ Target</span>
@@ -217,7 +227,7 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
                     <div className="flex flex-col items-center gap-2">
                       <div className={cn("w-1.5 h-1.5 rounded-full", theme === 'modern' ? "bg-emerald-500/50" : "bg-emerald-600/50")} />
                       <span className={cn(
-                        "text-[10px] font-black uppercase tracking-widest truncate max-w-[100px] transition-colors duration-500",
+                        "text-xs font-bold uppercase tracking-wide truncate max-w-[100px] transition-colors duration-500",
                         theme === 'modern' ? "text-white/60" : "text-slate-600"
                       )}>
                         {node.data.label}
@@ -241,13 +251,13 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
                           value={rowNode.data.label}
                           onChange={(e) => onUpdateNode(rowNode.id, { label: e.target.value })}
                           className={cn(
-                            "bg-transparent text-[11px] font-black uppercase tracking-wider outline-none transition-colors truncate",
+                            "bg-transparent text-xs font-bold uppercase tracking-wider outline-none transition-colors truncate",
                             theme === 'modern' ? "text-white focus:text-emerald-400" : "text-slate-900 focus:text-emerald-600"
                           )}
                         />
                         <div className="flex items-center gap-2">
                           <span className={cn(
-                            "text-[8px] uppercase font-black tracking-widest transition-colors duration-500",
+                            "text-xs uppercase font-bold tracking-wide transition-colors duration-500",
                             theme === 'modern' ? "text-white/20" : "text-slate-400"
                           )}>Initial Act:</span>
                           <input
@@ -256,9 +266,12 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
                             min="0"
                             max="1"
                             value={rowNode.data.initialActivation}
-                            onChange={(e) => onUpdateNode(rowNode.id, { initialActivation: parseFloat(e.target.value) })}
+                            onChange={(e) => {
+                              const value = sanitizeNumber(e.target.value, 0, 1);
+                              if (value !== null) onUpdateNode(rowNode.id, { initialActivation: value });
+                            }}
                             className={cn(
-                              "text-[9px] font-black w-12 px-1 rounded border outline-none transition-all duration-500",
+                              "text-xs font-bold w-12 px-1 rounded border outline-none transition-all duration-500",
                               theme === 'modern' ? "bg-white/5 text-emerald-400 border-white/5 focus:border-emerald-500/30" : "bg-slate-50 text-emerald-700 border-slate-200 focus:border-emerald-600/30"
                             )}
                           />
@@ -299,9 +312,12 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
                               max="1"
                               value={weight}
                               disabled={isSelf}
-                              onChange={(e) => onUpdateWeight(rowNode.id, colNode.id, parseFloat(e.target.value))}
+                              onChange={(e) => {
+                                const value = sanitizeNumber(e.target.value, -1, 1);
+                                if (value !== null) onUpdateWeight(rowNode.id, colNode.id, value);
+                              }}
                               className={cn(
-                                "w-full bg-transparent text-center text-[11px] font-black outline-none transition-all py-2 rounded-lg border border-transparent focus:border-emerald-500/30",
+                                "w-full bg-transparent text-center text-xs font-bold outline-none transition-all py-2 rounded-lg border border-transparent focus:border-emerald-500/30",
                                 isSelf 
                                   ? (theme === 'modern' ? "text-white/5 cursor-not-allowed" : "text-slate-200 cursor-not-allowed") 
                                   : (weight > 0 
@@ -316,7 +332,7 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
                                 value={weight}
                                 onChange={(e) => onUpdateWeight(rowNode.id, colNode.id, parseFloat(e.target.value))}
                                 className={cn(
-                                  "w-full bg-transparent text-center text-[9px] font-black outline-none transition-all py-2 rounded-lg border border-transparent appearance-none cursor-pointer",
+                                  "w-full bg-transparent text-center text-xs font-bold outline-none transition-all py-2 rounded-lg border border-transparent appearance-none cursor-pointer",
                                   isSelf 
                                     ? (theme === 'modern' ? "text-white/5 cursor-not-allowed" : "text-slate-200 cursor-not-allowed") 
                                     : (weight > 0 
@@ -372,7 +388,7 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
               <Info className={cn("w-4 h-4", theme === 'modern' ? "text-emerald-500/50" : "text-emerald-600/50")} />
             </div>
             <p className={cn(
-              "text-[9px] uppercase font-black tracking-[0.2em] leading-relaxed transition-colors duration-500",
+              "text-xs uppercase font-bold tracking-wide leading-relaxed transition-colors duration-500",
               theme === 'modern' ? "text-white/30" : "text-slate-500"
             )}>
               Weights range from <span className={theme === 'modern' ? "text-emerald-400" : "text-emerald-600"}>-1.0 to +1.0</span>. <br/>
@@ -384,14 +400,14 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
             <div className="flex items-center gap-2">
               <div className={cn("w-2 h-2 rounded-full", theme === 'modern' ? "bg-emerald-500" : "bg-emerald-600")} />
               <span className={cn(
-                "text-[9px] uppercase font-black tracking-widest transition-colors duration-500",
+                "text-xs uppercase font-bold tracking-wide transition-colors duration-500",
                 theme === 'modern' ? "text-white/40" : "text-slate-500"
               )}>Positive Influence</span>
             </div>
             <div className="flex items-center gap-2">
               <div className={cn("w-2 h-2 rounded-full", theme === 'modern' ? "bg-red-500" : "bg-red-600")} />
               <span className={cn(
-                "text-[9px] uppercase font-black tracking-widest transition-colors duration-500",
+                "text-xs uppercase font-bold tracking-wide transition-colors duration-500",
                 theme === 'modern' ? "text-white/40" : "text-slate-500"
               )}>Negative Influence</span>
             </div>
@@ -404,7 +420,7 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
         )}>
           <Languages className={cn("w-3.5 h-3.5", theme === 'modern' ? "text-emerald-400" : "text-emerald-600")} />
           <span className={cn(
-            "text-[9px] uppercase font-black tracking-widest transition-colors duration-500",
+            "text-xs uppercase font-bold tracking-wide transition-colors duration-500",
             theme === 'modern' ? "text-white/40" : "text-slate-500"
           )}>
             Fuzzy Mapping: <span className={theme === 'modern' ? "text-white" : "text-slate-900"}>{linguisticTerms.length}-Point Linguistic Scale</span>

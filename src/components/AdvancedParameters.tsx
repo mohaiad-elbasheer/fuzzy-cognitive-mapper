@@ -193,13 +193,13 @@ const AdvancedParameters: React.FC<AdvancedParametersProps> = ({
           </div>
           <div className="text-left">
             <span className={cn(
-              "text-[11px] font-black uppercase tracking-wider block",
+              "text-xs font-bold uppercase tracking-wider block",
               theme === 'modern' ? "text-white/60" : "text-slate-600"
             )}>
               Advanced
             </span>
             <span className={cn(
-              "text-[9px] uppercase tracking-widest",
+              "text-xs uppercase tracking-wide",
               theme === 'modern' ? "text-white/30" : "text-slate-400"
             )}>
               {scaleInfo.name} Scale • {membershipInfo.name}
@@ -230,14 +230,14 @@ const AdvancedParameters: React.FC<AdvancedParametersProps> = ({
               {/* Linguistic Scale */}
               <div className="space-y-2">
                 <label className={cn(
-                  "text-[9px] font-black uppercase tracking-widest flex items-center gap-2",
+                  "text-xs font-bold uppercase tracking-wide flex items-center gap-2",
                   theme === 'modern' ? "text-white/40" : "text-slate-500"
                 )}>
                   Linguistic Scale
                   <div className="group relative">
                     <Info className="w-3 h-3 cursor-help" />
                     <div className={cn(
-                      "absolute left-0 bottom-full mb-2 w-48 p-2 rounded-lg text-[9px] font-normal normal-case tracking-normal opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 border shadow-xl",
+                      "absolute left-0 bottom-full mb-2 w-48 p-2 rounded-lg text-xs font-normal normal-case tracking-normal opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 border shadow-xl",
                       theme === 'modern' ? "bg-[#0a0a14] text-white/70 border-white/10" : "bg-white text-slate-600 border-slate-200"
                     )}>
                       Determines how many linguistic terms are available for describing causal relationships.
@@ -253,7 +253,7 @@ const AdvancedParameters: React.FC<AdvancedParametersProps> = ({
                       key={scale}
                       onClick={() => onLinguisticScaleChange(scale)}
                       className={cn(
-                        "py-2 px-3 rounded-lg text-[9px] font-bold transition-all",
+                        "py-2 px-3 rounded-lg text-xs font-bold transition-all",
                         linguisticScale === scale
                           ? (theme === 'modern' 
                               ? "bg-emerald-500/20 text-emerald-400 shadow-sm" 
@@ -274,7 +274,7 @@ const AdvancedParameters: React.FC<AdvancedParametersProps> = ({
                   ))}
                 </div>
                 <p className={cn(
-                  "text-[8px] italic",
+                  "text-xs italic",
                   theme === 'modern' ? "text-white/20" : "text-slate-400"
                 )}>
                   {scaleInfo.description}
@@ -284,14 +284,14 @@ const AdvancedParameters: React.FC<AdvancedParametersProps> = ({
               {/* Membership Function */}
               <div className="space-y-2">
                 <label className={cn(
-                  "text-[9px] font-black uppercase tracking-widest flex items-center gap-2",
+                  "text-xs font-bold uppercase tracking-wide flex items-center gap-2",
                   theme === 'modern' ? "text-white/40" : "text-slate-500"
                 )}>
                   Membership Function
                   <div className="group relative">
                     <Info className="w-3 h-3 cursor-help" />
                     <div className={cn(
-                      "absolute left-0 bottom-full mb-2 w-48 p-2 rounded-lg text-[9px] font-normal normal-case tracking-normal opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 border shadow-xl",
+                      "absolute left-0 bottom-full mb-2 w-48 p-2 rounded-lg text-xs font-normal normal-case tracking-normal opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 border shadow-xl",
                       theme === 'modern' ? "bg-[#0a0a14] text-white/70 border-white/10" : "bg-white text-slate-600 border-slate-200"
                     )}>
                       Defines how crisp values are mapped to fuzzy membership degrees.
@@ -307,7 +307,7 @@ const AdvancedParameters: React.FC<AdvancedParametersProps> = ({
                       key={fn}
                       onClick={() => onMembershipFunctionChange(fn)}
                       className={cn(
-                        "flex-1 py-2 px-2 rounded-lg text-[9px] font-bold transition-all",
+                        "flex-1 py-2 px-2 rounded-lg text-xs font-bold transition-all",
                         membershipFunction === fn
                           ? (theme === 'modern' 
                               ? "bg-emerald-500/20 text-emerald-400 shadow-sm" 
@@ -322,7 +322,7 @@ const AdvancedParameters: React.FC<AdvancedParametersProps> = ({
                   ))}
                 </div>
                 <p className={cn(
-                  "text-[8px] italic",
+                  "text-xs italic",
                   theme === 'modern' ? "text-white/20" : "text-slate-400"
                 )}>
                   {membershipInfo.description}
@@ -333,7 +333,7 @@ const AdvancedParameters: React.FC<AdvancedParametersProps> = ({
               <button
                 onClick={() => setShowVisualization(!showVisualization)}
                 className={cn(
-                  "w-full text-[9px] font-bold uppercase tracking-widest py-2 rounded-lg border transition-all",
+                  "w-full text-xs font-bold uppercase tracking-wide py-2 rounded-lg border transition-all",
                   showVisualization
                     ? (theme === 'modern' ? "bg-white/10 border-white/20 text-white/60" : "bg-slate-100 border-slate-300 text-slate-600")
                     : (theme === 'modern' ? "border-white/10 text-white/30 hover:text-white/50 hover:border-white/20" : "border-slate-200 text-slate-400 hover:text-slate-500 hover:border-slate-300")

@@ -58,7 +58,7 @@ const CentralityView: React.FC<CentralityViewProps> = ({ nodes, edges, theme }) 
                 </td>
                 <td className="py-2 text-center">
                   <span className={cn(
-                    "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
+                    "px-2 py-0.5 rounded-full text-xs font-bold uppercase",
                     c.role === 'transmitter' && (theme === 'modern' ? "bg-blue-500/20 text-blue-400" : "bg-blue-100 text-blue-700"),
                     c.role === 'receiver' && (theme === 'modern' ? "bg-emerald-500/20 text-emerald-400" : "bg-emerald-100 text-emerald-700"),
                     c.role === 'ordinary' && (theme === 'modern' ? "bg-white/10 text-white/60" : "bg-slate-100 text-slate-600"),

@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, Dispatch, SetStateAction } from 'react';
 import { Node, Edge } from '@xyflow/react';
 import { storageService, Project, ProjectConfig, createEmptyProject, generateProjectId } from '../lib/storage';
+import { toast } from '../lib/toast';
 
 export type SaveStatus = 'saved' | 'saving' | 'unsaved';
 
@@ -91,6 +92,7 @@ export function useProjectPersistence({
     } else {
       setSaveStatus('unsaved');
       console.error('Failed to save project:', result.error);
+      toast.error(`Could not save project: ${result.error ?? 'unknown error'}`);
       return null;
     }
   }, [buildCurrentProject]);
@@ -127,6 +129,14 @@ export function useProjectPersistence({
       }
     });
   }, [setNodes, setEdges, onProjectSwitched]);
+
+  // Surface persistence failures (auto-save runs in the background)
+  useEffect(() => {
+    return storageService.onError((error) => {
+      setSaveStatus('unsaved');
+      toast.error(`Saving failed: ${error}`);
+    });
+  }, []);
 
   // Load last project on startup
   useEffect(() => {
@@ -204,6 +214,9 @@ export function useProjectPersistence({
     const result = await storageService.importFromFile(file);
     if (result.success && result.data) {
       loadProject(result.data);
+      toast.success(`Imported "${result.data.name}"`);
+    } else {
+      toast.error(`Import failed: ${result.error ?? 'invalid project file'}`);
     }
   }, [loadProject]);
 

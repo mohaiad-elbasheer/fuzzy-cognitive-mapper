@@ -15,6 +15,7 @@ import {
 import { toPng, toSvg } from 'html-to-image';
 import { Camera, FileCode, Loader2 } from 'lucide-react';
 import '@xyflow/react/dist/style.css';
+import { toast } from '../lib/toast';
 import { cn } from '../lib/utils';
 
 interface CanvasProps {
@@ -23,8 +24,8 @@ interface CanvasProps {
   onNodesChange: any;
   onEdgesChange: any;
   onConnect: (connection: Connection) => void;
-  onEdgeClick: (event: React.MouseEvent, edge: Edge) => void;
-  onNodeClick: (event: React.MouseEvent, node: Node) => void;
+  onEdgeClick?: (event: React.MouseEvent, edge: Edge) => void;
+  onNodeClick?: (event: React.MouseEvent, node: Node) => void;
   onNodeDragStop?: (event: React.MouseEvent, node: Node) => void;
   nodeTypes?: any;
   edgeTypes?: any;
@@ -132,6 +133,7 @@ const Canvas: React.FC<CanvasProps> = ({
       link.click();
     } catch (err) {
       console.error('Export failed', err);
+      toast.error(`Image export failed: ${err instanceof Error ? err.message : 'unknown error'}`);
     } finally {
       setIsExporting(false);
       // Restore the user's original viewport
@@ -163,6 +165,7 @@ const Canvas: React.FC<CanvasProps> = ({
         edgeTypes={edgeTypes}
         defaultEdgeOptions={edgeOptions}
         fitView
+        fitViewOptions={{ padding: 0.2 }}
         snapToGrid
         snapGrid={[20, 20]}
         colorMode={theme === 'modern' ? 'dark' : 'light'}
@@ -203,7 +206,7 @@ const Canvas: React.FC<CanvasProps> = ({
             {/* Floating Tooltip */}
             {!isExporting && (
               <div className={cn(
-                "absolute left-full ml-3 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest whitespace-nowrap opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 pointer-events-none transition-all duration-300 shadow-2xl border",
+                "absolute left-full ml-3 px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide whitespace-nowrap opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 pointer-events-none transition-all duration-300 shadow-2xl border",
                 theme === 'modern' 
                   ? "bg-[#0a0a14] text-white border-white/10" 
                   : "bg-white text-slate-900 border-slate-200"
@@ -231,7 +234,7 @@ const Canvas: React.FC<CanvasProps> = ({
 
             {!isExporting && (
               <div className={cn(
-                "absolute left-full ml-3 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest whitespace-nowrap opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 pointer-events-none transition-all duration-300 shadow-2xl border",
+                "absolute left-full ml-3 px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide whitespace-nowrap opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 pointer-events-none transition-all duration-300 shadow-2xl border",
                 theme === 'modern' 
                   ? "bg-[#0a0a14] text-white border-white/10" 
                   : "bg-white text-slate-900 border-slate-200"
@@ -241,21 +244,6 @@ const Canvas: React.FC<CanvasProps> = ({
             )}
           </button>
 
-          <div className={cn(
-            "flex items-center gap-3 px-3 py-2 rounded-xl border backdrop-blur-md shadow-xl transition-all duration-500",
-            theme === 'modern' ? "bg-[#0a0a14]/80 border-white/10" : "bg-white/80 border-slate-200"
-          )}>
-            <div className={cn(
-              "w-1.5 h-1.5 rounded-full transition-colors duration-500",
-              theme === 'modern' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-emerald-600"
-            )} />
-            <span className={cn(
-              "text-[9px] font-black uppercase tracking-[0.2em] transition-colors duration-500",
-              theme === 'modern' ? "text-white/40" : "text-slate-400"
-            )}>
-              Neural Topology
-            </span>
-          </div>
         </Panel>
       </ReactFlow>
     </div>

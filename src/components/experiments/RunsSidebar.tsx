@@ -69,7 +69,7 @@ const RunsSidebar: React.FC<RunsSidebarProps> = ({
       )}>
         <div className="flex items-center justify-between mb-3">
           <h3 className={cn(
-            "text-sm font-black uppercase tracking-wider",
+            "text-sm font-bold uppercase tracking-wider",
             theme === 'modern' ? "text-white/80" : "text-slate-700"
           )}>
             Simulation Runs
@@ -189,7 +189,7 @@ const RunsSidebar: React.FC<RunsSidebarProps> = ({
                   )}
 
                   <div className={cn(
-                    "flex items-center gap-2 mt-1 text-[10px]",
+                    "flex items-center gap-2 mt-1 text-xs",
                     theme === 'modern' ? "text-white/40" : "text-slate-400"
                   )}>
                     <span className="flex items-center gap-1">

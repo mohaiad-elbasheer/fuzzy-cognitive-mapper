@@ -12,3 +12,7 @@ PRIVATE_*.md
 LOCAL_*.md
 my-notes/
 .personal/
+
+# Playwright
+test-results/
+playwright-report/

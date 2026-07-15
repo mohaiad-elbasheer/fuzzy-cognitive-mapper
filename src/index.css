@@ -8,11 +8,7 @@
 }
 
 body {
-  @apply font-mono bg-[#0a0a14] text-white antialiased transition-colors duration-500;
-}
-
-body.academic {
-  @apply bg-[#f5f0e8] text-slate-900 font-serif;
+  @apply font-sans bg-[#0a0a14] text-white antialiased transition-colors duration-500;
 }
 
 .react-flow__node {
