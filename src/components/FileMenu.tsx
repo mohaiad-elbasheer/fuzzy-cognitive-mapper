@@ -165,7 +165,7 @@ const FileMenu: React.FC<FileMenuProps> = ({
             >
               <FilePlus className="w-4 h-4" />
               New Project
-              <span className={shortcutClass}>Ctrl+N</span>
+              <span className={shortcutClass}>Ctrl+Alt+N</span>
             </button>
 
             <div className={cn("my-1 h-px", theme === 'modern' ? "bg-white/5" : "bg-slate-100")} />

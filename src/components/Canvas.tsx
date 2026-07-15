@@ -15,6 +15,7 @@ import {
 import { toPng, toSvg } from 'html-to-image';
 import { Camera, FileCode, Loader2 } from 'lucide-react';
 import '@xyflow/react/dist/style.css';
+import { toast } from '../lib/toast';
 import { cn } from '../lib/utils';
 
 interface CanvasProps {
@@ -132,6 +133,7 @@ const Canvas: React.FC<CanvasProps> = ({
       link.click();
     } catch (err) {
       console.error('Export failed', err);
+      toast.error(`Image export failed: ${err instanceof Error ? err.message : 'unknown error'}`);
     } finally {
       setIsExporting(false);
       // Restore the user's original viewport

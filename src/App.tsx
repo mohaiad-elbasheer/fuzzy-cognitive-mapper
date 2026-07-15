@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, Suspense, lazy } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef, Suspense, lazy } from 'react';
 import {
   useNodesState,
   useEdgesState,
@@ -8,7 +8,7 @@ import {
   Node,
   ReactFlowProvider,
 } from '@xyflow/react';
-import { Brain, Plus, Play, Layers, Database, LayoutGrid, Table, Sun, Moon, PanelRightClose, PanelRightOpen, Check, X, Edit3, FlaskConical } from 'lucide-react';
+import { Brain, Plus, Play, Layers, Database, LayoutGrid, Table, Sun, Moon, PanelRightClose, PanelRightOpen, Check, X, Edit3, FlaskConical, Undo2, Redo2, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import dagre from 'dagre';
 import Canvas from './components/Canvas';
@@ -17,6 +17,7 @@ import EdgeEditor from './components/EdgeEditor';
 import FCMNodeComponent from './components/FCMNode';
 import FCMEdgeComponent from './components/FCMEdge';
 import ProjectManager from './components/ProjectManager';
+import Toaster from './components/Toaster';
 import FileMenu from './components/FileMenu';
 import { ProjectConfig } from './lib/storage';
 import { 
@@ -114,10 +115,13 @@ function Dashboard() {
   // Get current linguistic terms based on selected scale
   const currentLinguisticTerms = LINGUISTIC_SCALE_PRESETS[linguisticScale];
 
-  // History, clipboard, and keyboard shortcuts
-  const { saveToHistory, undo, redo } = useGraphHistory(nodes, edges, setNodes, setEdges);
-  const { copy, paste, deleteSelected } = useSelectionActions(nodes, edges, setNodes, setEdges, saveToHistory);
-  useKeyboardShortcuts({ undo, redo, copy, paste, deleteSelected });
+  // History and clipboard (entries are recorded automatically on change)
+  const { undo, redo, resetHistory, canUndo, canRedo } = useGraphHistory(nodes, edges, setNodes, setEdges);
+  const { copy, paste, deleteSelected } = useSelectionActions(nodes, edges, setNodes, setEdges);
+
+  // Results drawer collapse + hidden input for the Ctrl+O shortcut
+  const [resultsCollapsed, setResultsCollapsed] = useState(false);
+  const openFileInputRef = useRef<HTMLInputElement>(null);
 
   // Engine-facing views of the graph
   const fcmNodes: FCMNode[] = useMemo(() => {
@@ -154,6 +158,11 @@ function Dashboard() {
     setNodes
   );
 
+  // Auto-expand the results drawer whenever a new simulation completes
+  useEffect(() => {
+    if (simulation) setResultsCollapsed(false);
+  }, [simulation]);
+
   // Project persistence
   const projectConfig: ProjectConfig = {
     activationFunction: activationFn,
@@ -164,6 +173,11 @@ function Dashboard() {
     membershipFunction,
     theme,
   };
+
+  const onProjectSwitched = useCallback(() => {
+    clearSimulation();
+    resetHistory();
+  }, [clearSimulation, resetHistory]);
 
   const applyConfig = useCallback((config: ProjectConfig) => {
     setActivationFn(config.activationFunction);
@@ -191,13 +205,24 @@ function Dashboard() {
     setEdges,
     config: projectConfig,
     applyConfig,
-    onProjectSwitched: clearSimulation,
+    onProjectSwitched,
   });
 
   const renameProject = useCallback(async (newName: string) => {
     await persistRename(newName);
     setIsEditingName(false);
   }, [persistRename]);
+
+  useKeyboardShortcuts({
+    undo,
+    redo,
+    copy,
+    paste,
+    deleteSelected,
+    save: () => { saveCurrentProject(); },
+    openFile: () => openFileInputRef.current?.click(),
+    newProject: createNewProject,
+  });
 
 
   const startResizing = useCallback((e: React.MouseEvent) => {
@@ -228,7 +253,6 @@ function Dashboard() {
   }, [resize, stopResizing]);
 
   const updateNodeLabel = useCallback((nodeId: string, label: string) => {
-    saveToHistory();
     setNodes((nds) =>
       nds.map((node) => {
         if (node.id === nodeId) {
@@ -237,10 +261,9 @@ function Dashboard() {
         return node;
       })
     );
-  }, [saveToHistory, setNodes]);
+  }, [setNodes]);
 
   const updateEdgeWeightById = useCallback((edgeId: string, weight: number) => {
-    saveToHistory();
     setEdges((eds) =>
       eds.map((edge) => {
         if (edge.id === edgeId) {
@@ -249,10 +272,9 @@ function Dashboard() {
         return edge;
       })
     );
-  }, [saveToHistory, setEdges]);
+  }, [setEdges]);
 
   const flipEdge = useCallback((edgeId: string) => {
-    saveToHistory();
     setEdges((eds) =>
       eds.map((edge) => {
         if (edge.id === edgeId) {
@@ -265,10 +287,9 @@ function Dashboard() {
         return edge;
       })
     );
-  }, [saveToHistory, setEdges]);
+  }, [setEdges]);
 
   const updateNodeActivation = useCallback((nodeId: string, initialActivation: number) => {
-    saveToHistory();
     setNodes((nds) =>
       nds.map((node) => {
         if (node.id === nodeId) {
@@ -280,10 +301,9 @@ function Dashboard() {
         return node;
       })
     );
-  }, [saveToHistory, setNodes]);
+  }, [setNodes]);
 
   const reorganizeTopology = useCallback(() => {
-    saveToHistory();
     const dagreGraph = new dagre.graphlib.Graph();
     dagreGraph.setDefaultEdgeLabel(() => ({}));
     
@@ -314,18 +334,16 @@ function Dashboard() {
         };
       })
     );
-  }, [nodes, edges, saveToHistory, setNodes]);
+  }, [nodes, edges, setNodes]);
 
   const deleteNode = useCallback((nodeId: string) => {
-    saveToHistory();
     setNodes((nds) => nds.filter((n) => n.id !== nodeId));
     setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
-  }, [saveToHistory, setNodes, setEdges]);
+  }, [setNodes, setEdges]);
 
   const deleteEdge = useCallback((edgeId: string) => {
-    saveToHistory();
     setEdges((eds) => eds.filter((e) => e.id !== edgeId));
-  }, [saveToHistory, setEdges]);
+  }, [setEdges]);
 
   const nodesWithCallbacks = useMemo(() => {
     return nodes.map((node) => ({
@@ -355,10 +373,9 @@ function Dashboard() {
 
   const onConnect = useCallback(
     (params: Connection) => {
-      saveToHistory();
-      setEdges((eds) => addEdge({ ...params, type: 'fcm', data: { weight: 0.5 }, animated: true }, eds));
+        setEdges((eds) => addEdge({ ...params, type: 'fcm', data: { weight: 0.5 }, animated: true }, eds));
     },
-    [saveToHistory, setEdges]
+    [setEdges]
   );
 
   const onEdgeClick = useCallback((_: React.MouseEvent, edge: Edge) => {
@@ -389,7 +406,6 @@ function Dashboard() {
   }, [setNodes]);
 
   const addNode = useCallback(() => {
-    saveToHistory();
     const id = Math.random().toString(36).substr(2, 9);
     const newNode: Node = {
       id,
@@ -398,10 +414,9 @@ function Dashboard() {
       data: { label: `New Concept ${nodes.length + 1}`, initialActivation: 0.5 },
     };
     setNodes((nds) => [...nds, newNode]);
-  }, [nodes.length, setNodes, saveToHistory]);
+  }, [nodes.length, setNodes]);
 
   const updateMatrixWeight = useCallback((sourceId: string, targetId: string, weight: number) => {
-    saveToHistory();
     setEdges((eds) => {
       const existingEdge = eds.find(e => e.source === sourceId && e.target === targetId);
       if (existingEdge) {
@@ -422,10 +437,9 @@ function Dashboard() {
       }
       return eds;
     });
-  }, [saveToHistory, setEdges]);
+  }, [setEdges]);
 
   const addEdgeFromSidebar = useCallback((sourceId: string, targetId: string, weight: number) => {
-    saveToHistory();
     const id = `e${sourceId}-${targetId}`;
     const newEdge: Edge = {
       id,
@@ -436,11 +450,10 @@ function Dashboard() {
       animated: true,
     };
     setEdges((eds) => addEdge(newEdge, eds));
-  }, [saveToHistory, setEdges]);
+  }, [setEdges]);
 
   const updateEdgeWeight = useCallback((weight: number) => {
     if (!selectedEdge) return;
-    saveToHistory();
     setEdges((eds) =>
       eds.map((e) => {
         if (e.id === selectedEdge.id) {
@@ -450,10 +463,9 @@ function Dashboard() {
       })
     );
     setSelectedEdge((prev) => prev ? { ...prev, data: { ...prev.data, weight } } : null);
-  }, [selectedEdge, saveToHistory, setEdges]);
+  }, [selectedEdge, setEdges]);
 
   const handleImportData = useCallback((importedNodes: FCMNode[], importedEdges: FCMEdge[]) => {
-    saveToHistory();
     
     // Convert FCMNodes to React Flow nodes with positions
     const newNodes: Node[] = importedNodes.map((n, index) => ({
@@ -483,7 +495,7 @@ function Dashboard() {
     setNodes(newNodes);
     setEdges(newEdges);
     clearSimulation();
-  }, [saveToHistory, setNodes, setEdges, clearSimulation]);
+  }, [setNodes, setEdges, clearSimulation]);
 
   return (
     <div className={cn(
@@ -522,7 +534,7 @@ function Dashboard() {
           </div>
 
           {/* Center: File Menu, Project Name, Tabs (flexible, can shrink) */}
-          <div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4 min-w-0 overflow-hidden">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4 min-w-0">
             <FileMenu
               currentProject={currentProject}
               onNewProject={createNewProject}
@@ -649,6 +661,30 @@ function Dashboard() {
 
           {/* Right: Theme toggle & Actions (fixed width) */}
           <div className="flex items-center gap-1 sm:gap-2">
+            <button
+              onClick={undo}
+              disabled={!canUndo}
+              aria-label="Undo"
+              title="Undo (Ctrl+Z)"
+              className={cn(
+                "p-2 rounded-lg border transition-all duration-300 disabled:opacity-25 disabled:cursor-not-allowed",
+                theme === 'modern' ? "bg-white/5 border-white/10 text-white/60 hover:bg-white/10" : "bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200"
+              )}
+            >
+              <Undo2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={redo}
+              disabled={!canRedo}
+              aria-label="Redo"
+              title="Redo (Ctrl+Y)"
+              className={cn(
+                "p-2 rounded-lg border transition-all duration-300 disabled:opacity-25 disabled:cursor-not-allowed",
+                theme === 'modern' ? "bg-white/5 border-white/10 text-white/60 hover:bg-white/10" : "bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200"
+              )}
+            >
+              <Redo2 className="w-4 h-4" />
+            </button>
             {/* Theme Toggle */}
             <button
               onClick={() => setTheme(t => t === 'modern' ? 'academic' : 'modern')}
@@ -687,7 +723,6 @@ function Dashboard() {
                 onConnect={onConnect}
                 onEdgeClick={onEdgeClick}
                 onNodeClick={onNodeClick}
-                onNodeDragStop={() => saveToHistory()}
                 nodeTypes={nodeTypes}
                 edgeTypes={edgeTypes}
                 theme={theme}
@@ -746,7 +781,8 @@ function Dashboard() {
               )}
             </AnimatePresence>
 
-            {/* Floating Action Bar */}
+            {/* Floating Action Bar (canvas only: irrelevant elsewhere) */}
+            {activeTab === 'canvas' && (
             <div className={cn(
               "absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 backdrop-blur-md p-2 rounded-2xl border shadow-2xl transition-all duration-500",
               theme === 'modern' ? "bg-[#0a0a14]/90 border-white/10" : "bg-white/90 border-slate-200"
@@ -774,12 +810,14 @@ function Dashboard() {
                 {isSimulating ? 'Processing...' : 'Run Engine'}
               </button>
             </div>
+            )}
           </div>
 
-          {/* Collapsible Results Panel */}
+          {/* Collapsible Results Panel (canvas only) */}
+          {activeTab === 'canvas' && (
           <motion.div 
             initial={{ height: 120 }}
-            animate={{ height: simulationResults.length > 0 ? Math.max(panelHeight, 300) : 120 }}
+            animate={{ height: resultsCollapsed ? 48 : (simulationResults.length > 0 ? Math.max(panelHeight, 300) : 120) }}
             className={cn(
               "border-t overflow-hidden z-20 relative transition-colors duration-500",
               theme === 'modern' ? "bg-[#0a0a14] border-white/5" : "bg-white border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.03)]"
@@ -795,16 +833,31 @@ function Dashboard() {
             />
 
             <div className="max-w-7xl mx-auto p-8 h-full flex flex-col">
-              <div className="flex items-center justify-between mb-8">
+              <div className={cn("flex items-center justify-between", resultsCollapsed ? "mb-0" : "mb-8")}>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setResultsCollapsed(c => !c)}
+                    aria-label={resultsCollapsed ? "Expand results panel" : "Collapse results panel"}
+                    title={resultsCollapsed ? "Expand results panel" : "Collapse results panel"}
+                    className={cn(
+                      "p-1.5 rounded-lg border transition-all",
+                      theme === 'modern' ? "bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white" : "bg-slate-100 border-slate-200 text-slate-500 hover:bg-slate-200"
+                    )}
+                  >
+                    {resultsCollapsed ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </button>
                 <div>
                   <h3 className={cn(
                     "text-[10px] font-black uppercase tracking-[0.4em] transition-colors duration-500",
                     theme === 'modern' ? "text-white/40" : "text-slate-400"
                   )}>Simulation Output</h3>
+                  {!resultsCollapsed && (
                   <p className={cn(
                     "text-[10px] mt-1 transition-colors duration-500",
                     theme === 'modern' ? "text-white/20" : "text-slate-400"
                   )}>Real-time convergence analysis across {simulation?.iterations ?? 0} iterations</p>
+                  )}
+                </div>
                 </div>
                 <div className="flex items-center gap-4">
                   {simulationResults.length > 0 && (
@@ -916,6 +969,7 @@ function Dashboard() {
               </div>
             </div>
           </motion.div>
+          )}
         </main>
       </div>
 
@@ -923,12 +977,14 @@ function Dashboard() {
       <button
         onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
         className={cn(
-          "fixed right-0 top-1/2 -translate-y-1/2 z-40 p-2 rounded-l-xl border-l border-t border-b shadow-lg transition-all duration-300",
+          "fixed top-1/2 -translate-y-1/2 z-40 p-2 rounded-l-xl border-l border-t border-b shadow-lg transition-all duration-300",
           theme === 'modern' 
             ? "bg-[#0a0a14] border-white/10 text-white/60 hover:text-emerald-400 hover:bg-white/5" 
             : "bg-[#faf8f5] border-stone-200 text-slate-400 hover:text-emerald-600 hover:bg-white",
-          sidebarCollapsed ? "translate-x-0" : "translate-x-96"
+          // Sits at the sidebar's left edge when open, at the viewport edge when collapsed
+          sidebarCollapsed ? "right-0" : "right-96"
         )}
+        aria-label={sidebarCollapsed ? "Show configuration panel" : "Hide configuration panel"}
         title={sidebarCollapsed ? "Show Configuration Panel" : "Hide Configuration Panel"}
       >
         {sidebarCollapsed ? <PanelRightOpen className="w-5 h-5" /> : <PanelRightClose className="w-5 h-5" />}
@@ -969,6 +1025,21 @@ function Dashboard() {
           theme={theme}
         />
       </motion.div>
+
+      {/* Hidden input backing the Ctrl+O shortcut */}
+      <input
+        ref={openFileInputRef}
+        type="file"
+        accept=".json,.fcm.json"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) importProjectFile(file);
+          e.target.value = '';
+        }}
+      />
+
+      <Toaster theme={theme} />
 
       {/* Project Manager Modal */}
       <ProjectManager

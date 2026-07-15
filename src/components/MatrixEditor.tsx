@@ -4,6 +4,7 @@ import { Plus, Trash2, Info, ArrowRight, Settings2, Languages, Hash, ChevronDown
 import { cn } from '../lib/utils';
 import { LinguisticTerm, LINGUISTIC_TERMS, FCMNode, FCMEdge } from '../types';
 import { matrixToCSV, parseMatrixCSV } from '../lib/csv';
+import { toast } from '../lib/toast';
 
 interface MatrixEditorProps {
   nodes: Node[];
@@ -30,6 +31,14 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
 }) => {
   const [inputMode, setInputMode] = useState<'numeric' | 'linguistic'>('numeric');
   const [importError, setImportError] = useState<string | null>(null);
+
+  // Free-typed numbers can be empty ("" -> NaN) or out of range; ignore the
+  // former and clamp the latter so invalid values never reach the model.
+  const sanitizeNumber = (raw: string, min: number, max: number): number | null => {
+    const value = parseFloat(raw);
+    if (Number.isNaN(value)) return null;
+    return Math.min(max, Math.max(min, value));
+  };
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExportCSV = () => {
@@ -62,6 +71,7 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
       const { nodes: importedNodes, edges: importedEdges } = parseMatrixCSV(text);
       setImportError(null);
       onImportData?.(importedNodes, importedEdges);
+      toast.success(`Imported ${importedNodes.length} concepts and ${importedEdges.length} connections from CSV`);
     } catch (err) {
       setImportError(err instanceof Error ? err.message : 'Failed to parse CSV');
     }
@@ -256,7 +266,10 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
                             min="0"
                             max="1"
                             value={rowNode.data.initialActivation}
-                            onChange={(e) => onUpdateNode(rowNode.id, { initialActivation: parseFloat(e.target.value) })}
+                            onChange={(e) => {
+                              const value = sanitizeNumber(e.target.value, 0, 1);
+                              if (value !== null) onUpdateNode(rowNode.id, { initialActivation: value });
+                            }}
                             className={cn(
                               "text-[9px] font-black w-12 px-1 rounded border outline-none transition-all duration-500",
                               theme === 'modern' ? "bg-white/5 text-emerald-400 border-white/5 focus:border-emerald-500/30" : "bg-slate-50 text-emerald-700 border-slate-200 focus:border-emerald-600/30"
@@ -299,7 +312,10 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
                               max="1"
                               value={weight}
                               disabled={isSelf}
-                              onChange={(e) => onUpdateWeight(rowNode.id, colNode.id, parseFloat(e.target.value))}
+                              onChange={(e) => {
+                                const value = sanitizeNumber(e.target.value, -1, 1);
+                                if (value !== null) onUpdateWeight(rowNode.id, colNode.id, value);
+                              }}
                               className={cn(
                                 "w-full bg-transparent text-center text-[11px] font-black outline-none transition-all py-2 rounded-lg border border-transparent focus:border-emerald-500/30",
                                 isSelf 

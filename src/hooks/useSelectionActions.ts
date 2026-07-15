@@ -5,13 +5,13 @@ import { Node, Edge } from '@xyflow/react';
  * Copy/paste/delete for the currently selected nodes and edges.
  * Copying a set of nodes also copies the edges between them; pasting
  * clones everything with fresh ids, offset by 40px.
+ * History entries are recorded automatically by useGraphHistory.
  */
 export function useSelectionActions(
   nodes: Node[],
   edges: Edge[],
   setNodes: Dispatch<SetStateAction<Node[]>>,
-  setEdges: Dispatch<SetStateAction<Edge[]>>,
-  saveToHistory: () => void
+  setEdges: Dispatch<SetStateAction<Edge[]>>
 ) {
   const [clipboard, setClipboard] = useState<{ nodes: Node[]; edges: Edge[] } | null>(null);
 
@@ -30,7 +30,6 @@ export function useSelectionActions(
 
   const paste = useCallback(() => {
     if (!clipboard) return;
-    saveToHistory();
     const idMap: Record<string, string> = {};
     const newNodes = clipboard.nodes.map((node) => {
       const newId = `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -53,13 +52,12 @@ export function useSelectionActions(
 
     setNodes((nds) => nds.map((n) => ({ ...n, selected: false })).concat(newNodes));
     setEdges((eds) => eds.map((e) => ({ ...e, selected: false })).concat(newEdges));
-  }, [clipboard, saveToHistory, setNodes, setEdges]);
+  }, [clipboard, setNodes, setEdges]);
 
   const deleteSelected = useCallback(() => {
     const selectedNodes = nodes.filter((n) => n.selected);
     const selectedEdges = edges.filter((e) => e.selected);
     if (selectedNodes.length > 0 || selectedEdges.length > 0) {
-      saveToHistory();
       setNodes((nds) => nds.filter((n) => !n.selected));
       setEdges((eds) =>
         eds.filter(
@@ -67,7 +65,7 @@ export function useSelectionActions(
         )
       );
     }
-  }, [nodes, edges, saveToHistory, setNodes, setEdges]);
+  }, [nodes, edges, setNodes, setEdges]);
 
   return { copy, paste, deleteSelected };
 }
