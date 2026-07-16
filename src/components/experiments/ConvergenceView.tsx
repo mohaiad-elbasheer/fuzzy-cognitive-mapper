@@ -31,6 +31,17 @@ const ConvergenceView: React.FC<ConvergenceViewProps> = ({ run, theme }) => {
     });
   }, [run]);
 
+  // tanh/trivalent runs can go negative; widen the axis when they do
+  const hasNegative = useMemo(
+    () => run.history.some(iterState => iterState.some(c => c.activation < 0)),
+    [run]
+  );
+  const clampedLabels = useMemo(() => {
+    if (!run.clampedConcepts || run.clampedConcepts.length === 0) return [];
+    return run.clampedConcepts
+      .map(id => run.finalState.find(c => c.id === id)?.label ?? id);
+  }, [run]);
+
   return (
     <div className="space-y-4">
       <div className={cn(
@@ -54,7 +65,7 @@ const ConvergenceView: React.FC<ConvergenceViewProps> = ({ run, theme }) => {
                 label={{ value: 'Iteration', position: 'bottom', offset: -5 }}
               />
               <YAxis
-                domain={[0, 1]}
+                domain={hasNegative ? [-1, 1] : [0, 1]}
                 stroke={chartAxisColor(theme)}
                 fontSize={10}
                 label={{ value: 'Activation', angle: -90, position: 'insideLeft' }}
@@ -89,40 +100,36 @@ const ConvergenceView: React.FC<ConvergenceViewProps> = ({ run, theme }) => {
         "p-4 rounded-xl border",
         theme === 'modern' ? "bg-white/5 border-white/10" : "bg-white border-slate-200"
       )}>
-        <div className="grid grid-cols-4 gap-4">
-          <div>
-            <p className={cn("text-xs uppercase tracking-wider", theme === 'modern' ? "text-white/40" : "text-slate-400")}>
-              Status
-            </p>
-            <p className={cn("text-lg font-bold mt-1", run.converged ? "text-emerald-500" : "text-amber-500")}>
-              {run.converged ? 'Converged' : 'Not Converged'}
-            </p>
-          </div>
-          <div>
-            <p className={cn("text-xs uppercase tracking-wider", theme === 'modern' ? "text-white/40" : "text-slate-400")}>
-              Iterations
-            </p>
-            <p className={cn("text-lg font-bold mt-1", theme === 'modern' ? "text-white" : "text-slate-800")}>
-              {run.iterations}
-            </p>
-          </div>
-          <div>
-            <p className={cn("text-xs uppercase tracking-wider", theme === 'modern' ? "text-white/40" : "text-slate-400")}>
-              Concepts
-            </p>
-            <p className={cn("text-lg font-bold mt-1", theme === 'modern' ? "text-white" : "text-slate-800")}>
-              {run.finalState.length}
-            </p>
-          </div>
-          <div>
-            <p className={cn("text-xs uppercase tracking-wider", theme === 'modern' ? "text-white/40" : "text-slate-400")}>
-              Activation Fn
-            </p>
-            <p className={cn("text-lg font-bold mt-1 capitalize", theme === 'modern' ? "text-white" : "text-slate-800")}>
-              {run.config.activationFunction}
-            </p>
-          </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: 'Status', value: run.converged ? 'Converged' : 'Not Converged', className: run.converged ? "text-emerald-500" : "text-amber-500" },
+            { label: 'Iterations', value: String(run.iterations) },
+            { label: 'Concepts', value: String(run.finalState.length) },
+            { label: 'Activation Fn', value: run.config.activationFunction, capitalize: true },
+            { label: 'Lambda λ', value: String(run.config.lambda) },
+            { label: 'Max Iterations', value: String(run.config.maxIterations) },
+            { label: 'Convergence ε', value: run.config.convergenceThreshold.toExponential(0) },
+            { label: 'Clamped', value: clampedLabels.length > 0 ? `${clampedLabels.length}` : 'None' },
+          ].map(({ label, value, className, capitalize }) => (
+            <div key={label}>
+              <p className={cn("text-xs uppercase tracking-wider", theme === 'modern' ? "text-white/40" : "text-slate-400")}>
+                {label}
+              </p>
+              <p className={cn(
+                "text-lg font-bold mt-1",
+                capitalize && "capitalize",
+                className ?? (theme === 'modern' ? "text-white" : "text-slate-800")
+              )}>
+                {value}
+              </p>
+            </div>
+          ))}
         </div>
+        {clampedLabels.length > 0 && (
+          <p className={cn("text-xs mt-3", theme === 'modern' ? "text-white/40" : "text-slate-400")}>
+            Clamped concepts: {clampedLabels.join(', ')}
+          </p>
+        )}
       </div>
     </div>
   );

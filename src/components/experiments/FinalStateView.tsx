@@ -29,6 +29,8 @@ const FinalStateView: React.FC<FinalStateViewProps> = ({ run, theme }) => {
     }));
   }, [run]);
 
+  const hasNegative = useMemo(() => finalStateData.some(d => d.final < 0 || d.initial < 0), [finalStateData]);
+
   return (
     <div className={cn(
       "p-4 rounded-xl border",
@@ -46,7 +48,7 @@ const FinalStateView: React.FC<FinalStateViewProps> = ({ run, theme }) => {
             <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor(theme)} />
             <XAxis
               type="number"
-              domain={[0, 1]}
+              domain={hasNegative ? [-1, 1] : [0, 1]}
               stroke={chartAxisColor(theme)}
               fontSize={10}
             />

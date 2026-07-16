@@ -49,6 +49,8 @@ interface InspectorProps {
   linguisticTerms: LinguisticTerm[];
   onRunSimulation: () => void;
   isSimulating: boolean;
+  /** Hide the run button on workspaces that have their own run action. */
+  showRunButton?: boolean;
   theme?: 'modern' | 'academic';
 }
 
@@ -93,6 +95,7 @@ const Inspector: React.FC<InspectorProps> = ({
   linguisticTerms,
   onRunSimulation,
   isSimulating,
+  showRunButton = true,
   theme = 'modern',
 }) => {
   const [newEdgeTarget, setNewEdgeTarget] = useState('');
@@ -495,17 +498,26 @@ const Inspector: React.FC<InspectorProps> = ({
         )}
       </div>
 
-      <button
-        onClick={onRunSimulation}
-        disabled={isSimulating || nodes.length === 0}
-        className={cn(
-          "w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50",
-          theme === 'modern' ? "bg-emerald-500 text-[#0a0a14] hover:bg-emerald-400" : "bg-emerald-600 text-white hover:bg-emerald-700"
-        )}
-      >
-        <Play className="w-4 h-4 fill-current" />
-        {isSimulating ? 'Running…' : 'Run simulation'}
-      </button>
+      {showRunButton ? (
+        <button
+          onClick={onRunSimulation}
+          disabled={isSimulating || nodes.length === 0}
+          className={cn(
+            "w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50",
+            theme === 'modern' ? "bg-emerald-500 text-[#0a0a14] hover:bg-emerald-400" : "bg-emerald-600 text-white hover:bg-emerald-700"
+          )}
+        >
+          <Play className="w-4 h-4 fill-current" />
+          {isSimulating ? 'Running…' : 'Run simulation'}
+        </button>
+      ) : (
+        <p className={cn(
+          "text-xs leading-relaxed",
+          theme === 'modern' ? "text-white/40" : "text-slate-400"
+        )}>
+          These settings apply to new experiment runs and to the map simulation.
+        </p>
+      )}
     </div>
   );
 

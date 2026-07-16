@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { cn } from '../../lib/utils';
 import { FCMNode, FCMEdge } from '../../types';
+import { SimulationConfig } from '../../lib/experiments';
 import { runSimulation } from '../../logic/fcmEngine';
 import { COLORS, ExperimentTheme, chartTooltipStyle, chartAxisColor, chartGridColor } from './shared';
 
@@ -23,21 +24,31 @@ interface SensitivityData {
 interface SensitivityViewProps {
   nodes: FCMNode[];
   edges: FCMEdge[];
+  /** Current simulation settings; the sweep uses these, not defaults. */
+  config: SimulationConfig;
   theme: ExperimentTheme;
 }
 
-const SensitivityView: React.FC<SensitivityViewProps> = ({ nodes, edges, theme }) => {
+const SensitivityView: React.FC<SensitivityViewProps> = ({ nodes, edges, config, theme }) => {
   const [inputId, setInputId] = useState<string | null>(null);
   const [data, setData] = useState<SensitivityData[]>([]);
   const [running, setRunning] = useState(false);
 
-  // Sweep one input concept from 0 to 1 and record every final state
+  // tanh/trivalent activations span [-1, 1]; sweep and plot accordingly
+  const signedRange = config.activationFunction === 'tanh' || config.activationFunction === 'trivalent';
+  const sweepMin = signedRange ? -1 : 0;
+
+  // Sweep one input concept across its activation range and record every
+  // final state, using the current simulation settings and clamps.
   const runAnalysis = (inputConceptId: string) => {
     setRunning(true);
     setInputId(inputConceptId);
     setData([]);
 
-    const sweepValues = Array.from({ length: 21 }, (_, i) => i * 0.05); // 0, 0.05, ..., 1.0
+    const stepCount = 21;
+    const stepSize = (1 - sweepMin) / (stepCount - 1);
+    const sweepValues = Array.from({ length: stepCount }, (_, i) => sweepMin + i * stepSize);
+    const clampedIds = nodes.filter(n => n.clamped).map(n => n.id);
     const results: SensitivityData[] = [];
 
     for (const sweepValue of sweepValues) {
@@ -46,7 +57,15 @@ const SensitivityView: React.FC<SensitivityViewProps> = ({ nodes, edges, theme }
         initialActivation: node.id === inputConceptId ? sweepValue : node.initialActivation,
       }));
 
-      const { steps } = runSimulation(modifiedNodes, edges, 'sigmoid', 1, 50, 0.001);
+      const { steps } = runSimulation(
+        modifiedNodes,
+        edges,
+        config.activationFunction,
+        config.lambda,
+        config.maxIterations,
+        config.convergenceThreshold,
+        { clampedNodeIds: clampedIds }
+      );
 
       if (steps.length > 0) {
         const finalState = steps[steps.length - 1];
@@ -100,7 +119,8 @@ const SensitivityView: React.FC<SensitivityViewProps> = ({ nodes, edges, theme }
           Sensitivity Analysis
         </h4>
         <p className={cn("text-xs mb-4", theme === 'modern' ? "text-white/40" : "text-slate-500")}>
-          Select a concept to sweep from 0 to 1 and see how it affects all other concepts.
+          Select a concept to sweep from {sweepMin} to 1 and see how it affects all other concepts.
+          Uses your current settings ({config.activationFunction}, λ {config.lambda}).
         </p>
 
         <div className="flex flex-wrap gap-2">
@@ -161,7 +181,7 @@ const SensitivityView: React.FC<SensitivityViewProps> = ({ nodes, edges, theme }
                     }}
                   />
                   <YAxis
-                    domain={[0, 1]}
+                    domain={[sweepMin, 1]}
                     stroke={chartAxisColor(theme)}
                     fontSize={10}
                     label={{
@@ -212,7 +232,7 @@ const SensitivityView: React.FC<SensitivityViewProps> = ({ nodes, edges, theme }
               Sensitivity Rankings
             </h4>
             <p className={cn("text-xs mb-4", theme === 'modern' ? "text-white/40" : "text-slate-500")}>
-              Concepts sorted by how much they change when "{inputLabel}" varies from 0 to 1.
+              Concepts sorted by how much they change when "{inputLabel}" varies from {sweepMin} to 1.
             </p>
 
             <div className="grid gap-2">
