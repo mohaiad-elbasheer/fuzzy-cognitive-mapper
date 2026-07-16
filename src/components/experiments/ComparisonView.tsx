@@ -31,6 +31,11 @@ const ComparisonView: React.FC<ComparisonViewProps> = ({ selectedCount, result, 
     }));
   }, [result]);
 
+  const hasNegative = useMemo(
+    () => !!result && result.deltas.some(d => d.valueA < 0 || d.valueB < 0),
+    [result]
+  );
+
   if (selectedCount < 2 || !result) {
     return (
       <div className={cn(
@@ -64,7 +69,7 @@ const ComparisonView: React.FC<ComparisonViewProps> = ({ selectedCount, result, 
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={comparisonData} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor(theme)} />
-              <XAxis type="number" domain={[0, 1]} stroke={chartAxisColor(theme)} fontSize={10} />
+              <XAxis type="number" domain={hasNegative ? [-1, 1] : [0, 1]} stroke={chartAxisColor(theme)} fontSize={10} />
               <YAxis type="category" dataKey="name" width={120} stroke={chartAxisColor(theme)} fontSize={10} />
               <Tooltip
                 contentStyle={chartTooltipStyle(theme)}

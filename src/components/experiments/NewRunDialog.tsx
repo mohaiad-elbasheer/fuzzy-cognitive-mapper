@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import { Play } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
+import { SimulationConfig } from '../../lib/experiments';
 import { ExperimentTheme } from './shared';
 
 interface NewRunDialogProps {
   open: boolean;
   nodeCount: number;
   edgeCount: number;
+  clampedCount: number;
+  config: SimulationConfig;
   onClose: () => void;
   onCreate: (name: string) => void;
   theme: ExperimentTheme;
@@ -17,6 +20,8 @@ const NewRunDialog: React.FC<NewRunDialogProps> = ({
   open,
   nodeCount,
   edgeCount,
+  clampedCount,
+  config,
   onClose,
   onCreate,
   theme,
@@ -85,11 +90,17 @@ const NewRunDialog: React.FC<NewRunDialogProps> = ({
               </div>
 
               <div className={cn(
-                "p-3 rounded-lg text-sm",
+                "p-3 rounded-lg text-sm space-y-1",
                 theme === 'modern' ? "bg-white/5 text-white/50" : "bg-slate-50 text-slate-500"
               )}>
-                <p>This will run a simulation with the current network configuration:</p>
-                <p className="mt-1 font-medium">{nodeCount} concepts, {edgeCount} connections</p>
+                <p>Runs with your current settings from the inspector:</p>
+                <p className="font-medium">
+                  {nodeCount} concepts · {edgeCount} connections
+                  {clampedCount > 0 && <> · {clampedCount} clamped</>}
+                </p>
+                <p className="font-mono text-xs">
+                  {config.activationFunction} · λ {config.lambda} · ≤{config.maxIterations} iterations · ε {config.convergenceThreshold.toExponential(0)}
+                </p>
               </div>
             </div>
 

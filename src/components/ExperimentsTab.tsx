@@ -7,7 +7,7 @@ import {
   Sliders,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { SimulationRun, compareRuns, ComparisonResult } from '../lib/experiments';
+import { SimulationRun, SimulationConfig, compareRuns, ComparisonResult } from '../lib/experiments';
 import { experimentStore } from '../lib/experiments/experimentStore';
 import { FCMNode, FCMEdge } from '../types';
 import RunsSidebar from './experiments/RunsSidebar';
@@ -22,6 +22,8 @@ import { ExperimentTheme } from './experiments/shared';
 interface ExperimentsTabProps {
   nodes: FCMNode[];
   edges: FCMEdge[];
+  /** Current simulation settings from the inspector; every new run uses these. */
+  config: SimulationConfig;
   theme?: ExperimentTheme;
 }
 
@@ -30,6 +32,7 @@ type AnalysisView = 'convergence' | 'finalState' | 'comparison' | 'sensitivity' 
 const ExperimentsTab: React.FC<ExperimentsTabProps> = ({
   nodes,
   edges,
+  config,
   theme = 'modern',
 }) => {
   const [runs, setRuns] = useState<SimulationRun[]>([]);
@@ -98,8 +101,12 @@ const ExperimentsTab: React.FC<ExperimentsTabProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  const clampedIds = useMemo(() => nodes.filter(n => n.clamped).map(n => n.id), [nodes]);
+
   const handleCreateRun = (name: string) => {
-    experimentStore.createRun(nodes, edges, name);
+    // Run with the settings currently configured in the inspector, honoring
+    // clamped concepts, so experiment results match the canvas simulation.
+    experimentStore.createRun(nodes, edges, name, undefined, config, clampedIds);
     setShowNewRunDialog(false);
   };
 
@@ -195,7 +202,7 @@ const ExperimentsTab: React.FC<ExperimentsTabProps> = ({
                 />
               )}
               {activeView === 'sensitivity' && (
-                <SensitivityView nodes={nodes} edges={edges} theme={theme} />
+                <SensitivityView nodes={nodes} edges={edges} config={config} theme={theme} />
               )}
               {activeView === 'centrality' && (
                 <CentralityView nodes={nodes} edges={edges} theme={theme} />
@@ -209,6 +216,8 @@ const ExperimentsTab: React.FC<ExperimentsTabProps> = ({
         open={showNewRunDialog}
         nodeCount={nodes.length}
         edgeCount={edges.length}
+        clampedCount={clampedIds.length}
+        config={config}
         onClose={() => setShowNewRunDialog(false)}
         onCreate={handleCreateRun}
         theme={theme}

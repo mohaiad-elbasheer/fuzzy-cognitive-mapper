@@ -866,6 +866,12 @@ function Dashboard() {
               <ExperimentsTab
                 nodes={fcmNodes}
                 edges={fcmEdges}
+                config={{
+                  activationFunction: activationFn,
+                  lambda,
+                  maxIterations,
+                  convergenceThreshold,
+                }}
                 theme={theme}
               />
             )}
@@ -1108,6 +1114,7 @@ function Dashboard() {
           linguisticTerms={currentLinguisticTerms}
           onRunSimulation={handleRunSimulation}
           isSimulating={isSimulating}
+          showRunButton={activeTab === 'canvas'}
           theme={theme}
         />
       </motion.div>
