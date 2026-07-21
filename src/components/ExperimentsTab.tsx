@@ -176,8 +176,8 @@ const ExperimentsTab: React.FC<ExperimentsTabProps> = ({
                       ? "bg-white/10 text-emerald-400"
                       : "bg-emerald-50 text-emerald-700")
                   : (theme === 'modern'
-                      ? "text-white/40 hover:text-white/60 hover:bg-white/5"
-                      : "text-slate-400 hover:text-slate-600 hover:bg-slate-50")
+                      ? "text-white/60 hover:text-white/60 hover:bg-white/5"
+                      : "text-slate-500 hover:text-slate-600 hover:bg-slate-50")
               )}
             >
               <Icon className="w-4 h-4" />
@@ -202,7 +202,7 @@ const ExperimentsTab: React.FC<ExperimentsTabProps> = ({
           {RUN_VIEWS.includes(activeView) && selectedRuns.length === 0 ? (
             <div className={cn(
               "h-full flex flex-col items-center justify-center",
-              theme === 'modern' ? "text-white/30" : "text-slate-400"
+              theme === 'modern' ? "text-white/55" : "text-slate-500"
             )}>
               <BarChart3 className="w-16 h-16 mb-4 opacity-30" />
               <p className="text-lg font-medium">Select a simulation run to analyze</p>

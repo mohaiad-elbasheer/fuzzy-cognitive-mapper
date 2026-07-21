@@ -25,11 +25,11 @@ const LoopsView: React.FC<LoopsViewProps> = ({ nodes, edges, theme }) => {
         "p-8 rounded-xl border text-center",
         theme === 'modern' ? "bg-white/5 border-white/10" : "bg-white border-slate-200"
       )}>
-        <RefreshCw className={cn("w-12 h-12 mx-auto mb-3", theme === 'modern' ? "text-white/20" : "text-slate-300")} />
+        <RefreshCw className={cn("w-12 h-12 mx-auto mb-3", theme === 'modern' ? "text-white/60" : "text-slate-500")} />
         <p className={cn("font-medium", theme === 'modern' ? "text-white/60" : "text-slate-600")}>
           No feedback loops in this map
         </p>
-        <p className={cn("text-sm mt-1 max-w-md mx-auto", theme === 'modern' ? "text-white/30" : "text-slate-400")}>
+        <p className={cn("text-sm mt-1 max-w-md mx-auto", theme === 'modern' ? "text-white/55" : "text-slate-500")}>
           The causal structure is a one-way flow. Loops appear when influence
           eventually returns to a concept it started from.
         </p>
@@ -49,7 +49,7 @@ const LoopsView: React.FC<LoopsViewProps> = ({ nodes, edges, theme }) => {
         <h4 className={cn("text-sm font-bold mb-1", theme === 'modern' ? "text-white/80" : "text-slate-700")}>
           Feedback Loops
         </h4>
-        <p className={cn("text-xs mb-4", theme === 'modern' ? "text-white/40" : "text-slate-500")}>
+        <p className={cn("text-xs mb-4", theme === 'modern' ? "text-white/60" : "text-slate-500")}>
           {loops.length} loop{loops.length > 1 ? 's' : ''}: {reinforcing} reinforcing (amplify change),{' '}
           {balancing} balancing (resist change). Strength is the product of the loop's absolute weights.
         </p>
@@ -97,7 +97,7 @@ const LoopsView: React.FC<LoopsViewProps> = ({ nodes, edges, theme }) => {
                     )}>
                       {label}
                     </span>
-                    <ArrowRight className={cn("w-3.5 h-3.5 shrink-0", theme === 'modern' ? "text-white/30" : "text-slate-400")} />
+                    <ArrowRight className={cn("w-3.5 h-3.5 shrink-0", theme === 'modern' ? "text-white/55" : "text-slate-500")} />
                   </React.Fragment>
                 ))}
                 <span className={cn(
@@ -113,7 +113,7 @@ const LoopsView: React.FC<LoopsViewProps> = ({ nodes, edges, theme }) => {
 
         <div className={cn(
           "mt-4 p-3 rounded-lg text-xs leading-relaxed",
-          theme === 'modern' ? "bg-white/5 text-white/50" : "bg-slate-50 text-slate-500"
+          theme === 'modern' ? "bg-white/5 text-white/60" : "bg-slate-50 text-slate-500"
         )}>
           <p><strong>Reinforcing loops</strong> amplify whatever direction the system is moving — growth spirals or vicious cycles.</p>
           <p><strong>Balancing loops</strong> push back against change and pull the system toward equilibrium.</p>

@@ -31,17 +31,17 @@ const SimulationChart: React.FC<SimulationChartProps> = ({ data, nodes, theme = 
           "w-12 h-12 rounded-full flex items-center justify-center mb-4 transition-colors duration-500",
           theme === 'modern' ? "bg-white/5" : "bg-slate-100"
         )}>
-          <Activity className={cn("w-6 h-6", theme === 'modern' ? "text-white/20" : "text-slate-300")} />
+          <Activity className={cn("w-6 h-6", theme === 'modern' ? "text-white/60" : "text-slate-500")} />
         </div>
         <p className={cn(
           "text-xs font-bold uppercase tracking-wide transition-colors duration-500",
-          theme === 'modern' ? "text-white/40" : "text-slate-500"
+          theme === 'modern' ? "text-white/60" : "text-slate-500"
         )}>
           No Simulation Data
         </p>
         <p className={cn(
           "text-xs mt-2 max-w-[200px] transition-colors duration-500",
-          theme === 'modern' ? "text-white/20" : "text-slate-400"
+          theme === 'modern' ? "text-white/60" : "text-slate-500"
         )}>
           Initialize concepts and trigger the inference engine to visualize convergence.
         </p>
@@ -69,7 +69,7 @@ const SimulationChart: React.FC<SimulationChartProps> = ({ data, nodes, theme = 
       <div className="flex items-center justify-between mb-8">
         <h3 className={cn(
           "text-xs font-bold uppercase tracking-wide flex items-center gap-3 transition-colors duration-500",
-          theme === 'modern' ? "text-white/40" : "text-slate-500"
+          theme === 'modern' ? "text-white/60" : "text-slate-500"
         )}>
           <div className={cn(
             "w-1.5 h-1.5 rounded-full transition-all duration-500",
@@ -91,7 +91,7 @@ const SimulationChart: React.FC<SimulationChartProps> = ({ data, nodes, theme = 
             )} />
             <span className={cn(
               "text-xs font-bold uppercase transition-colors duration-500",
-              theme === 'modern' ? "text-white/20" : "text-slate-400"
+              theme === 'modern' ? "text-white/60" : "text-slate-500"
             )}>Stable</span>
           </div>
         </div>
@@ -101,13 +101,13 @@ const SimulationChart: React.FC<SimulationChartProps> = ({ data, nodes, theme = 
         {/* Axis Labels */}
         <div className={cn(
           "absolute -left-8 top-1/2 -translate-y-1/2 -rotate-90 text-xs font-bold uppercase tracking-wide pointer-events-none transition-colors duration-500",
-          theme === 'modern' ? "text-white/10" : "text-slate-300"
+          theme === 'modern' ? "text-white/10" : "text-slate-500"
         )}>
           Activation Level ({hasNegative ? '-1.0 - 1.0' : '0.0 - 1.0'})
         </div>
         <div className={cn(
           "absolute -bottom-4 left-1/2 -translate-x-1/2 text-xs font-bold uppercase tracking-wide pointer-events-none transition-colors duration-500",
-          theme === 'modern' ? "text-white/10" : "text-slate-300"
+          theme === 'modern' ? "text-white/10" : "text-slate-500"
         )}>
           Inference Iterations
         </div>

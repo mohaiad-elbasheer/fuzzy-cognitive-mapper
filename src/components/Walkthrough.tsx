@@ -67,7 +67,7 @@ const Walkthrough: React.FC<WalkthroughProps> = ({ open, onClose, theme = 'moder
               aria-label="Close tour"
               className={cn(
                 "absolute top-4 right-4 p-1.5 rounded-lg transition-colors",
-                theme === 'modern' ? "text-white/40 hover:text-white hover:bg-white/10" : "text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                theme === 'modern' ? "text-white/60 hover:text-white hover:bg-white/10" : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
               )}
             >
               <X className="w-4 h-4" />
@@ -80,7 +80,7 @@ const Walkthrough: React.FC<WalkthroughProps> = ({ open, onClose, theme = 'moder
               <Icon className="w-6 h-6" />
             </div>
 
-            <p className={cn("text-xs font-semibold uppercase tracking-wider mb-1", theme === 'modern' ? "text-white/40" : "text-slate-400")}>
+            <p className={cn("text-xs font-semibold uppercase tracking-wider mb-1", theme === 'modern' ? "text-white/60" : "text-slate-500")}>
               Step {step + 1} of {STEPS.length}
             </p>
             <h2 className={cn("text-lg font-bold mb-2", theme === 'modern' ? "text-white" : "text-slate-900")}>

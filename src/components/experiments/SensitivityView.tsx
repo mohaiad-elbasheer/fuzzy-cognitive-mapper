@@ -118,7 +118,7 @@ const SensitivityView: React.FC<SensitivityViewProps> = ({ nodes, edges, config,
         <h4 className={cn("text-sm font-bold mb-3", theme === 'modern' ? "text-white/80" : "text-slate-700")}>
           Sensitivity Analysis
         </h4>
-        <p className={cn("text-xs mb-4", theme === 'modern' ? "text-white/40" : "text-slate-500")}>
+        <p className={cn("text-xs mb-4", theme === 'modern' ? "text-white/60" : "text-slate-500")}>
           Select a concept to sweep from {sweepMin} to 1 and see how it affects all other concepts.
           Uses your current settings ({config.activationFunction}, λ {config.lambda}).
         </p>
@@ -216,7 +216,7 @@ const SensitivityView: React.FC<SensitivityViewProps> = ({ nodes, edges, config,
             {nodes.filter(n => n.id !== inputId).length > 8 && (
               <p className={cn(
                 "text-xs mt-2 text-center",
-                theme === 'modern' ? "text-white/30" : "text-slate-400"
+                theme === 'modern' ? "text-white/55" : "text-slate-500"
               )}>
                 Showing first 8 concepts. Total: {nodes.filter(n => n.id !== inputId).length}
               </p>
@@ -231,7 +231,7 @@ const SensitivityView: React.FC<SensitivityViewProps> = ({ nodes, edges, config,
             <h4 className={cn("text-sm font-bold mb-3", theme === 'modern' ? "text-white/80" : "text-slate-700")}>
               Sensitivity Rankings
             </h4>
-            <p className={cn("text-xs mb-4", theme === 'modern' ? "text-white/40" : "text-slate-500")}>
+            <p className={cn("text-xs mb-4", theme === 'modern' ? "text-white/60" : "text-slate-500")}>
               Concepts sorted by how much they change when "{inputLabel}" varies from {sweepMin} to 1.
             </p>
 
@@ -248,7 +248,7 @@ const SensitivityView: React.FC<SensitivityViewProps> = ({ nodes, edges, config,
                     "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
                     i < 3
                       ? (theme === 'modern' ? "bg-emerald-500/20 text-emerald-400" : "bg-emerald-100 text-emerald-700")
-                      : (theme === 'modern' ? "bg-white/10 text-white/50" : "bg-slate-200 text-slate-500")
+                      : (theme === 'modern' ? "bg-white/10 text-white/60" : "bg-slate-200 text-slate-500")
                   )}>
                     {i + 1}
                   </span>
@@ -278,7 +278,7 @@ const SensitivityView: React.FC<SensitivityViewProps> = ({ nodes, edges, config,
                       "text-xs font-mono w-16 text-right",
                       item.direction === 'positive' ? "text-emerald-500" :
                       item.direction === 'negative' ? "text-red-500" :
-                      (theme === 'modern' ? "text-white/40" : "text-slate-400")
+                      (theme === 'modern' ? "text-white/60" : "text-slate-500")
                     )}>
                       {item.slope > 0 ? '+' : ''}{(item.slope * 100).toFixed(1)}%
                     </span>
@@ -289,7 +289,7 @@ const SensitivityView: React.FC<SensitivityViewProps> = ({ nodes, edges, config,
 
             <div className={cn(
               "mt-4 p-3 rounded-lg text-xs",
-              theme === 'modern' ? "bg-white/5 text-white/50" : "bg-slate-50 text-slate-500"
+              theme === 'modern' ? "bg-white/5 text-white/60" : "bg-slate-50 text-slate-500"
             )}>
               <p><strong className="text-emerald-500">Steep positive slope:</strong> Concept increases as input increases</p>
               <p><strong className="text-red-500">Steep negative slope:</strong> Concept decreases as input increases</p>
@@ -306,12 +306,12 @@ const SensitivityView: React.FC<SensitivityViewProps> = ({ nodes, edges, config,
         )}>
           <Sliders className={cn(
             "w-12 h-12 mx-auto mb-3",
-            theme === 'modern' ? "text-white/20" : "text-slate-300"
+            theme === 'modern' ? "text-white/60" : "text-slate-500"
           )} />
           <p className={cn("font-medium", theme === 'modern' ? "text-white/60" : "text-slate-600")}>
             Select a concept above to analyze
           </p>
-          <p className={cn("text-sm mt-1", theme === 'modern' ? "text-white/30" : "text-slate-400")}>
+          <p className={cn("text-sm mt-1", theme === 'modern' ? "text-white/55" : "text-slate-500")}>
             The analysis will show how all other concepts respond when you vary the selected input.
           </p>
         </div>

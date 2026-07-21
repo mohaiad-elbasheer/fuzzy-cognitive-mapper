@@ -190,6 +190,7 @@ const Canvas: React.FC<CanvasProps> = ({
           <button
             onClick={onDownloadImage}
             disabled={isExporting}
+            aria-label="Export map as PNG image"
             className={cn(
               "relative group flex items-center justify-center w-9 h-9 rounded-xl border backdrop-blur-md shadow-xl transition-all duration-300",
               theme === 'modern' 
@@ -219,6 +220,7 @@ const Canvas: React.FC<CanvasProps> = ({
           <button
             onClick={onDownloadSvg}
             disabled={isExporting}
+            aria-label="Export map as SVG image"
             className={cn(
               "relative group flex items-center justify-center w-9 h-9 rounded-xl border backdrop-blur-md shadow-xl transition-all duration-300",
               theme === 'modern' 

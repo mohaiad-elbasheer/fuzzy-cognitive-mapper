@@ -113,21 +113,21 @@ const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
                 className={cn(
                   "flex-1 px-3 py-2 text-sm rounded-lg outline-none border",
                   theme === 'modern'
-                    ? "bg-white/5 border-white/10 text-white focus:border-emerald-500 placeholder:text-white/30"
-                    : "bg-slate-50 border-slate-200 text-slate-800 focus:border-emerald-600 placeholder:text-slate-400"
+                    ? "bg-white/5 border-white/10 text-white focus:border-emerald-500 placeholder:text-white/55"
+                    : "bg-slate-50 border-slate-200 text-slate-800 focus:border-emerald-600 placeholder:text-slate-500"
                 )}
               />
               <button
                 onClick={() => setSearchOpen(false)}
                 aria-label="Close search"
-                className={cn("p-1.5 rounded", theme === 'modern' ? "text-white/40 hover:text-white" : "text-slate-400 hover:text-slate-700")}
+                className={cn("p-1.5 rounded", theme === 'modern' ? "text-white/60 hover:text-white" : "text-slate-500 hover:text-slate-700")}
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
             <div className="max-h-56 overflow-y-auto custom-scrollbar">
               {matches.length === 0 ? (
-                <p className={cn("px-3 py-3 text-sm", theme === 'modern' ? "text-white/30" : "text-slate-400")}>
+                <p className={cn("px-3 py-3 text-sm", theme === 'modern' ? "text-white/55" : "text-slate-500")}>
                   No matching concept
                 </p>
               ) : (

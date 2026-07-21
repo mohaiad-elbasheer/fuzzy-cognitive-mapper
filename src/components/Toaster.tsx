@@ -53,7 +53,7 @@ const Toaster: React.FC<ToasterProps> = ({ theme = 'modern' }) => {
                 aria-label="Dismiss notification"
                 className={cn(
                   "p-0.5 rounded shrink-0 transition-colors",
-                  theme === 'modern' ? "text-white/40 hover:text-white" : "text-slate-400 hover:text-slate-700"
+                  theme === 'modern' ? "text-white/60 hover:text-white" : "text-slate-500 hover:text-slate-700"
                 )}
               >
                 <X className="w-3.5 h-3.5" />

@@ -126,7 +126,7 @@ const FileMenu: React.FC<FileMenuProps> = ({
 
   const shortcutClass = cn(
     "ml-auto text-xs font-mono",
-    theme === 'modern' ? "text-white/30" : "text-slate-400"
+    theme === 'modern' ? "text-white/55" : "text-slate-500"
   );
 
   return (
@@ -208,7 +208,7 @@ const FileMenu: React.FC<FileMenuProps> = ({
                     {recentProjects.length === 0 ? (
                       <div className={cn(
                         "px-3 py-4 text-center text-sm",
-                        theme === 'modern' ? "text-white/30" : "text-slate-400"
+                        theme === 'modern' ? "text-white/55" : "text-slate-500"
                       )}>
                         No recent projects
                       </div>
@@ -230,7 +230,7 @@ const FileMenu: React.FC<FileMenuProps> = ({
                             <div className="truncate">{project.name}</div>
                             <div className={cn(
                               "text-xs",
-                              theme === 'modern' ? "text-white/30" : "text-slate-400"
+                              theme === 'modern' ? "text-white/55" : "text-slate-500"
                             )}>
                               {project.nodeCount} concepts · {formatDate(project.updatedAt)}
                             </div>
@@ -306,7 +306,7 @@ const FileMenu: React.FC<FileMenuProps> = ({
                           <div className="truncate">{sample.name}</div>
                           <div className={cn(
                             "text-xs truncate",
-                            theme === 'modern' ? "text-white/30" : "text-slate-400"
+                            theme === 'modern' ? "text-white/55" : "text-slate-500"
                           )}>
                             {sample.description}
                           </div>

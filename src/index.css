@@ -64,3 +64,22 @@ body {
   @apply bg-slate-300;
 }
 
+
+/* Visible keyboard focus (Sprint 3: accessibility) */
+:focus-visible {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Respect reduced-motion preferences: collapse animations and transitions */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .react-flow__edge-path {
+    stroke-dasharray: none !important;
+  }
+}

@@ -93,7 +93,7 @@ const ScenariosView: React.FC<ScenariosViewProps> = ({
         <h4 className={cn("text-sm font-bold mb-1", theme === 'modern' ? "text-white/80" : "text-slate-700")}>
           Scenarios
         </h4>
-        <p className={cn("text-xs mb-4", theme === 'modern' ? "text-white/40" : "text-slate-500")}>
+        <p className={cn("text-xs mb-4", theme === 'modern' ? "text-white/60" : "text-slate-500")}>
           A scenario snapshots the map's initial activations and clamps. Set up a
           what-if on the Map workspace, capture it here, then run all scenarios
           as a batch to compare outcomes.
@@ -109,8 +109,8 @@ const ScenariosView: React.FC<ScenariosViewProps> = ({
             className={cn(
               "flex-1 px-3 py-2 rounded-lg text-sm outline-none border",
               theme === 'modern'
-                ? "bg-white/5 border-white/10 text-white focus:border-emerald-500 placeholder:text-white/30"
-                : "bg-slate-50 border-slate-200 text-slate-800 focus:border-emerald-600 placeholder:text-slate-400"
+                ? "bg-white/5 border-white/10 text-white focus:border-emerald-500 placeholder:text-white/55"
+                : "bg-slate-50 border-slate-200 text-slate-800 focus:border-emerald-600 placeholder:text-slate-500"
             )}
           />
           <button
@@ -136,7 +136,7 @@ const ScenariosView: React.FC<ScenariosViewProps> = ({
                 <FlaskConical className={cn("w-4 h-4 shrink-0", theme === 'modern' ? "text-emerald-400" : "text-emerald-600")} />
                 <div className="flex-1 min-w-0">
                   <p className={cn("text-sm font-medium truncate", theme === 'modern' ? "text-white/90" : "text-slate-800")}>{s.name}</p>
-                  <p className={cn("text-xs", theme === 'modern' ? "text-white/40" : "text-slate-400")}>
+                  <p className={cn("text-xs", theme === 'modern' ? "text-white/60" : "text-slate-500")}>
                     {s.clampedIds.length > 0 ? `${s.clampedIds.length} clamped` : 'no clamps'}
                   </p>
                 </div>
@@ -156,7 +156,7 @@ const ScenariosView: React.FC<ScenariosViewProps> = ({
                   aria-label={`Delete scenario ${s.name}`}
                   className={cn(
                     "p-2 rounded-lg transition-colors",
-                    theme === 'modern' ? "text-white/40 hover:text-red-400 hover:bg-red-500/10" : "text-slate-400 hover:text-red-600 hover:bg-red-50"
+                    theme === 'modern' ? "text-white/60 hover:text-red-400 hover:bg-red-500/10" : "text-slate-500 hover:text-red-600 hover:bg-red-50"
                   )}
                 >
                   <Trash2 className="w-4 h-4" />
@@ -188,7 +188,7 @@ const ScenariosView: React.FC<ScenariosViewProps> = ({
           </h4>
           <table className="w-full text-sm">
             <thead>
-              <tr className={cn("text-left text-xs uppercase tracking-wider", theme === 'modern' ? "text-white/40" : "text-slate-400")}>
+              <tr className={cn("text-left text-xs uppercase tracking-wider", theme === 'modern' ? "text-white/60" : "text-slate-500")}>
                 <th className="pb-2 pr-4">Concept</th>
                 <th className="pb-2 text-right pr-4">Baseline</th>
                 {scenarios.map(s => (
@@ -225,7 +225,7 @@ const ScenariosView: React.FC<ScenariosViewProps> = ({
               })}
             </tbody>
           </table>
-          <p className={cn("text-xs mt-3", theme === 'modern' ? "text-white/40" : "text-slate-400")}>
+          <p className={cn("text-xs mt-3", theme === 'modern' ? "text-white/60" : "text-slate-500")}>
             Deltas are relative to the baseline (the map as currently configured). Runs use your
             current simulation settings ({config.activationFunction}, λ {config.lambda}).
           </p>

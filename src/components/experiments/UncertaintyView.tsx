@@ -81,7 +81,7 @@ const UncertaintyView: React.FC<UncertaintyViewProps> = ({ nodes, edges, config,
         <h4 className={cn("text-sm font-bold mb-1", theme === 'modern' ? "text-white/80" : "text-slate-700")}>
           Uncertainty Analysis (Monte Carlo)
         </h4>
-        <p className={cn("text-xs mb-4", theme === 'modern' ? "text-white/40" : "text-slate-500")}>
+        <p className={cn("text-xs mb-4", theme === 'modern' ? "text-white/60" : "text-slate-500")}>
           Samples every weight within its ± uncertainty and re-runs the simulation each time.
           {uncertainEdges.length === 0
             ? ' No connection has uncertainty yet — select a connection on the map and set "Uncertainty ±" to make this meaningful.'
@@ -117,7 +117,7 @@ const UncertaintyView: React.FC<UncertaintyViewProps> = ({ nodes, edges, config,
             {running ? 'Sampling…' : 'Run analysis'}
           </button>
           {result && (
-            <span className={cn("text-xs ml-auto", theme === 'modern' ? "text-white/40" : "text-slate-400")}>
+            <span className={cn("text-xs ml-auto", theme === 'modern' ? "text-white/60" : "text-slate-500")}>
               {result.samples} runs · {(result.convergedFraction * 100).toFixed(0)}% converged · seed {result.seed}
             </span>
           )}
@@ -161,7 +161,7 @@ const UncertaintyView: React.FC<UncertaintyViewProps> = ({ nodes, edges, config,
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className={cn("text-left text-xs uppercase tracking-wider", theme === 'modern' ? "text-white/40" : "text-slate-400")}>
+                <tr className={cn("text-left text-xs uppercase tracking-wider", theme === 'modern' ? "text-white/60" : "text-slate-500")}>
                   <th className="pb-2">Concept</th>
                   <th className="pb-2 text-right">p05</th>
                   <th className="pb-2 text-right">Median</th>

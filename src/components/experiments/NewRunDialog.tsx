@@ -42,7 +42,11 @@ const NewRunDialog: React.FC<NewRunDialogProps> = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="New simulation run"
           onClick={onClose}
+          onKeyDown={e => e.key === 'Escape' && onClose()}
         >
           <div className={cn(
             "absolute inset-0",
@@ -70,12 +74,13 @@ const NewRunDialog: React.FC<NewRunDialogProps> = ({
               <div>
                 <label className={cn(
                   "block text-xs font-bold uppercase tracking-wider mb-2",
-                  theme === 'modern' ? "text-white/40" : "text-slate-400"
+                  theme === 'modern' ? "text-white/60" : "text-slate-500"
                 )}>
                   Run Name
                 </label>
                 <input
                   autoFocus
+                  aria-label="Run name"
                   value={name}
                   onChange={e => setName(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleCreate()}
@@ -83,15 +88,15 @@ const NewRunDialog: React.FC<NewRunDialogProps> = ({
                   className={cn(
                     "w-full px-4 py-2 rounded-lg outline-none transition-all",
                     theme === 'modern'
-                      ? "bg-white/10 text-white border border-white/10 focus:border-emerald-500/50 placeholder:text-white/20"
-                      : "bg-slate-50 text-slate-900 border border-slate-200 focus:border-emerald-500 placeholder:text-slate-300"
+                      ? "bg-white/10 text-white border border-white/10 focus:border-emerald-500/50 placeholder:text-white/60"
+                      : "bg-slate-50 text-slate-900 border border-slate-200 focus:border-emerald-500 placeholder:text-slate-500"
                   )}
                 />
               </div>
 
               <div className={cn(
                 "p-3 rounded-lg text-sm space-y-1",
-                theme === 'modern' ? "bg-white/5 text-white/50" : "bg-slate-50 text-slate-500"
+                theme === 'modern' ? "bg-white/5 text-white/60" : "bg-slate-50 text-slate-500"
               )}>
                 <p>Runs with your current settings from the inspector:</p>
                 <p className="font-medium">

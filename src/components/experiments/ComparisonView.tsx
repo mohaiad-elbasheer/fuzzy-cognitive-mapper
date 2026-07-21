@@ -44,12 +44,12 @@ const ComparisonView: React.FC<ComparisonViewProps> = ({ selectedCount, result, 
       )}>
         <GitCompare className={cn(
           "w-12 h-12 mx-auto mb-3",
-          theme === 'modern' ? "text-white/20" : "text-slate-300"
+          theme === 'modern' ? "text-white/60" : "text-slate-500"
         )} />
         <p className={cn("font-medium", theme === 'modern' ? "text-white/60" : "text-slate-600")}>
           Select exactly 2 runs to compare
         </p>
-        <p className={cn("text-sm mt-1", theme === 'modern' ? "text-white/30" : "text-slate-400")}>
+        <p className={cn("text-sm mt-1", theme === 'modern' ? "text-white/55" : "text-slate-500")}>
           Currently selected: {selectedCount}
         </p>
       </div>
@@ -119,7 +119,7 @@ const ComparisonView: React.FC<ComparisonViewProps> = ({ selectedCount, result, 
             </div>
           )}
           <div className={cn("p-3 rounded-lg", theme === 'modern' ? "bg-white/5" : "bg-slate-50")}>
-            <p className={cn("text-xs uppercase tracking-wider", theme === 'modern' ? "text-white/40" : "text-slate-400")}>
+            <p className={cn("text-xs uppercase tracking-wider", theme === 'modern' ? "text-white/60" : "text-slate-500")}>
               Avg. Change
             </p>
             <p className={cn("font-bold mt-1 text-lg", theme === 'modern' ? "text-white" : "text-slate-800")}>

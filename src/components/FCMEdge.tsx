@@ -72,7 +72,7 @@ export default function FCMEdge({
               ? "text-emerald-500"
               : weight < 0
                 ? "text-red-500"
-                : (theme === 'modern' ? "text-white/50" : "text-slate-400"),
+                : (theme === 'modern' ? "text-white/60" : "text-slate-500"),
             theme === 'modern' ? "bg-[#0a0a14]/85 border-white/10" : "bg-white/90 border-slate-200",
             isExporting && "border-transparent shadow-none"
           )}>
