@@ -311,15 +311,14 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
                               min="-1"
                               max="1"
                               value={weight}
-                              disabled={isSelf}
                               onChange={(e) => {
                                 const value = sanitizeNumber(e.target.value, -1, 1);
                                 if (value !== null) onUpdateWeight(rowNode.id, colNode.id, value);
                               }}
                               className={cn(
                                 "w-full bg-transparent text-center text-xs font-bold outline-none transition-all py-2 rounded-lg border border-transparent focus:border-emerald-500/30",
-                                isSelf 
-                                  ? (theme === 'modern' ? "text-white/5 cursor-not-allowed" : "text-slate-200 cursor-not-allowed") 
+                                isSelf && weight === 0
+                                  ? (theme === 'modern' ? "text-white/20" : "text-slate-300")
                                   : (weight > 0 
                                       ? (theme === 'modern' ? "text-emerald-400" : "text-emerald-600") 
                                       : (weight < 0 ? (theme === 'modern' ? "text-red-400" : "text-red-600") : (theme === 'modern' ? "text-white/20" : "text-slate-300")))
@@ -328,13 +327,12 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
                           ) : (
                             <div className="relative w-full group/select">
                               <select
-                                disabled={isSelf}
                                 value={weight}
                                 onChange={(e) => onUpdateWeight(rowNode.id, colNode.id, parseFloat(e.target.value))}
                                 className={cn(
                                   "w-full bg-transparent text-center text-xs font-bold outline-none transition-all py-2 rounded-lg border border-transparent appearance-none cursor-pointer",
-                                  isSelf 
-                                    ? (theme === 'modern' ? "text-white/5 cursor-not-allowed" : "text-slate-200 cursor-not-allowed") 
+                                  isSelf && weight === 0
+                                    ? (theme === 'modern' ? "text-white/20" : "text-slate-300")
                                     : (weight > 0 
                                         ? (theme === 'modern' ? "text-emerald-400" : "text-emerald-600") 
                                         : (weight < 0 ? (theme === 'modern' ? "text-red-400" : "text-red-600") : (theme === 'modern' ? "text-white/20" : "text-slate-300")))

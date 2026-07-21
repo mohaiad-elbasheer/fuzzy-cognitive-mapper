@@ -2,6 +2,7 @@ import {
   FCMNode, 
   FCMEdge, 
   ActivationFunction, 
+  InferenceRule,
   SimulationResult,
   FCMModelConfig,
   DEFAULT_MODEL_CONFIG,
@@ -104,6 +105,8 @@ export interface SimulationOptions {
    * the initial value on every iteration instead of being updated.
    */
   clampedNodeIds?: string[];
+  /** Inference rule; defaults to 'modified-kosko' (the historical behavior). */
+  inferenceRule?: InferenceRule;
 }
 
 /**
@@ -160,6 +163,9 @@ export const runSimulation = (
 ): SimulationOutcome => {
   const steps: SimulationResult[] = [];
   const clamped = new Set(options.clampedNodeIds ?? []);
+  const rule: InferenceRule = options.inferenceRule ?? 'modified-kosko';
+  // The rescaled rule maps activations to [−1,1] before combining them
+  const transform = rule === 'rescaled' ? (a: number) => 2 * a - 1 : (a: number) => a;
 
   // Initialize activation state
   let currentActivations = nodes.reduce((acc, node) => {
@@ -183,16 +189,18 @@ export const runSimulation = (
         continue;
       }
 
-      // Calculate weighted sum of incoming activations
+      // Calculate weighted sum of incoming activations (self-loop edges
+      // where source === target contribute here like any other edge)
       const weightedSum = edges
         .filter(edge => edge.target === node.id)
         .reduce((acc, edge) => {
           const sourceActivation = currentActivations[edge.source] || 0;
-          return acc + (sourceActivation * edge.weight);
+          return acc + (transform(sourceActivation) * edge.weight);
         }, 0);
 
-      // Apply inference formula: A_i(k+1) = f(sum + A_i(k))
-      const newValue = f(weightedSum + currentActivations[node.id], lambda);
+      // Self-memory term depends on the inference rule
+      const selfTerm = rule === 'kosko' ? 0 : transform(currentActivations[node.id]);
+      const newValue = f(weightedSum + selfTerm, lambda);
       nextActivations[node.id] = newValue;
 
       const diff = Math.abs(newValue - currentActivations[node.id]);
@@ -236,7 +244,8 @@ export const runSimulationWithConfig = (
     fullConfig.activationFunction,
     fullConfig.lambda,
     fullConfig.maxIterations,
-    fullConfig.convergenceThreshold
+    fullConfig.convergenceThreshold,
+    { inferenceRule: fullConfig.inferenceRule }
   );
 };
 

@@ -15,11 +15,14 @@ import {
   FCMNode,
   FCMEdge,
   ActivationFunction,
+  InferenceRule,
+  INFERENCE_RULE_INFO,
   LinguisticScalePreset,
   MembershipFunctionType,
   LinguisticTerm,
 } from '../types';
 import { cn } from '../lib/utils';
+import { checkModel } from '../lib/analysis/loops';
 import AdvancedParameters from './AdvancedParameters';
 
 interface InspectorProps {
@@ -32,10 +35,13 @@ interface InspectorProps {
   onAddEdge: (sourceId: string, targetId: string, weight: number) => void;
   onDeleteEdge: (edgeId: string) => void;
   onUpdateEdgeWeight: (edgeId: string, weight: number) => void;
+  onUpdateEdgeUncertainty: (edgeId: string, uncertainty: number) => void;
   onFlipEdge: (edgeId: string) => void;
   onClearSelection: () => void;
   activationFn: ActivationFunction;
   setActivationFn: (fn: ActivationFunction) => void;
+  inferenceRule: InferenceRule;
+  setInferenceRule: (rule: InferenceRule) => void;
   lambda: number;
   setLambda: (val: number) => void;
   maxIterations: number;
@@ -78,10 +84,13 @@ const Inspector: React.FC<InspectorProps> = ({
   onAddEdge,
   onDeleteEdge,
   onUpdateEdgeWeight,
+  onUpdateEdgeUncertainty,
   onFlipEdge,
   onClearSelection,
   activationFn,
   setActivationFn,
+  inferenceRule,
+  setInferenceRule,
   lambda,
   setLambda,
   maxIterations,
@@ -99,6 +108,7 @@ const Inspector: React.FC<InspectorProps> = ({
   theme = 'modern',
 }) => {
   const [newEdgeTarget, setNewEdgeTarget] = useState('');
+  const modelWarnings = checkModel(nodes, edges);
 
   const selectedEdge = selectedEdgeId ? edges.find(e => e.id === selectedEdgeId) ?? null : null;
   const selectedNode = !selectedEdge && selectedNodeId ? nodes.find(n => n.id === selectedNodeId) ?? null : null;
@@ -196,6 +206,32 @@ const Inspector: React.FC<InspectorProps> = ({
           </div>
         </div>
 
+        <div className="space-y-2">
+          <div className="flex justify-between items-end">
+            <SectionLabel theme={theme}>Uncertainty ±</SectionLabel>
+            <span className={cn("text-sm font-mono font-semibold", theme === 'modern' ? "text-white/70" : "text-slate-600")}>
+              {(edge.uncertainty ?? 0).toFixed(2)}
+            </span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="0.5"
+            step="0.05"
+            value={edge.uncertainty ?? 0}
+            aria-label="Weight uncertainty"
+            onChange={(e) => onUpdateEdgeUncertainty(edge.id, parseFloat(e.target.value))}
+            className={cn(
+              "w-full h-2 rounded-full appearance-none cursor-pointer accent-amber-500",
+              theme === 'modern' ? "bg-white/10" : "bg-slate-200"
+            )}
+          />
+          <p className={cn("text-xs leading-relaxed", theme === 'modern' ? "text-white/40" : "text-slate-400")}>
+            How confident are you in this weight? Non-zero values feed the
+            Monte Carlo uncertainty analysis in Experiments.
+          </p>
+        </div>
+
         <p className={cn(
           "text-sm leading-relaxed p-3 rounded-xl border",
           theme === 'modern' ? "bg-white/5 border-white/10 text-white/60" : "bg-slate-50 border-slate-100 text-slate-500"
@@ -238,7 +274,7 @@ const Inspector: React.FC<InspectorProps> = ({
   // ------------------------------------------------------------------
   const renderNodeEditor = (node: FCMNode) => {
     const outgoing = edges.filter(e => e.source === node.id);
-    const availableTargets = nodes.filter(n => n.id !== node.id && !outgoing.some(e => e.target === n.id));
+    const availableTargets = nodes.filter(n => !outgoing.some(e => e.target === n.id));
 
     return (
       <div className="p-5 space-y-6">
@@ -355,7 +391,9 @@ const Inspector: React.FC<InspectorProps> = ({
               >
                 <option value="" className={theme === 'modern' ? "bg-[#0a0a14]" : "bg-white"}>Connect to…</option>
                 {availableTargets.map(n => (
-                  <option key={n.id} value={n.id} className={theme === 'modern' ? "bg-[#0a0a14]" : "bg-white"}>{n.label}</option>
+                  <option key={n.id} value={n.id} className={theme === 'modern' ? "bg-[#0a0a14]" : "bg-white"}>
+                    {n.id === node.id ? `${n.label} (self-loop)` : n.label}
+                  </option>
                 ))}
               </select>
               <button
@@ -436,6 +474,25 @@ const Inspector: React.FC<InspectorProps> = ({
       </div>
 
       <div className="space-y-2">
+        <SectionLabel theme={theme}>Inference rule</SectionLabel>
+        <select
+          value={inferenceRule}
+          aria-label="Inference rule"
+          onChange={(e) => setInferenceRule(e.target.value as InferenceRule)}
+          className={inputClass}
+        >
+          {(Object.keys(INFERENCE_RULE_INFO) as InferenceRule[]).map(rule => (
+            <option key={rule} value={rule} className={theme === 'modern' ? "bg-[#0a0a14]" : "bg-white"}>
+              {INFERENCE_RULE_INFO[rule].name} — {INFERENCE_RULE_INFO[rule].formula}
+            </option>
+          ))}
+        </select>
+        <p className={cn("text-xs leading-relaxed", theme === 'modern' ? "text-white/40" : "text-slate-400")}>
+          {INFERENCE_RULE_INFO[inferenceRule].description}
+        </p>
+      </div>
+
+      <div className="space-y-2">
         <div className="flex justify-between items-center">
           <SectionLabel theme={theme}>Steepness λ</SectionLabel>
           <span className={cn("text-sm font-mono font-semibold", theme === 'modern' ? "text-emerald-400" : "text-emerald-600")}>{lambda.toFixed(1)}</span>
@@ -497,6 +554,22 @@ const Inspector: React.FC<InspectorProps> = ({
           <span> · <span className="font-medium">{nodes.filter(n => n.clamped).length}</span> clamped</span>
         )}
       </div>
+
+      {modelWarnings.length > 0 && (
+        <div className={cn(
+          "p-3 rounded-xl border space-y-2",
+          theme === 'modern' ? "bg-amber-500/5 border-amber-500/20" : "bg-amber-50 border-amber-200"
+        )} role="status">
+          <p className={cn("text-xs font-semibold uppercase tracking-wider", theme === 'modern' ? "text-amber-400" : "text-amber-700")}>
+            Model checks
+          </p>
+          {modelWarnings.map((w, i) => (
+            <p key={i} className={cn("text-xs leading-relaxed", theme === 'modern' ? "text-white/60" : "text-slate-600")}>
+              {w.message}
+            </p>
+          ))}
+        </div>
+      )}
 
       {showRunButton ? (
         <button

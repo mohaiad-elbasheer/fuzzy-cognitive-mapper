@@ -5,6 +5,7 @@
 import { SimulationRun, generateRunId, ConceptState, SimulationConfig, DEFAULT_SIMULATION_CONFIG } from './types';
 import { FCMNode, FCMEdge } from '../../types';
 import { runSimulation } from '../../logic/fcmEngine';
+import { APP_VERSION } from '../../version';
 
 const STORAGE_KEY = 'fcm_experiment_runs';
 const MAX_RUNS = 50; // Keep last 50 runs
@@ -96,7 +97,7 @@ class ExperimentStore {
       fullConfig.lambda,
       fullConfig.maxIterations,
       fullConfig.convergenceThreshold,
-      { clampedNodeIds: clampedConceptIds }
+      { clampedNodeIds: clampedConceptIds, inferenceRule: fullConfig.inferenceRule }
     );
 
     // Build history from steps - each step is one iteration
@@ -130,6 +131,8 @@ class ExperimentStore {
       converged: outcome.converged,
       iterations: outcome.iterations,
       clampedConcepts: clampedConceptIds,
+      weights: edges.map(e => ({ source: e.source, target: e.target, weight: e.weight })),
+      appVersion: APP_VERSION,
     };
     
     this.runs.push(run);

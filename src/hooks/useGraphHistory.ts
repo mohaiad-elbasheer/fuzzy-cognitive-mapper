@@ -34,6 +34,7 @@ const historyKey = (nodes: Node[], edges: Edge[]): string =>
       s: e.source,
       t: e.target,
       w: e.data?.weight,
+      u: e.data?.uncertainty ?? 0,
     })),
   });
 

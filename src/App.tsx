@@ -24,13 +24,14 @@ import FCMEdgeComponent from './components/FCMEdge';
 import Toaster from './components/Toaster';
 import Walkthrough from './components/Walkthrough';
 import FileMenu from './components/FileMenu';
-import { ProjectConfig } from './lib/storage';
+import { ProjectConfig, Scenario } from './lib/storage';
 import { SampleModel } from './lib/samples';
 import { toast } from './lib/toast';
 import {
   FCMNode,
   FCMEdge,
   ActivationFunction,
+  InferenceRule,
   LinguisticScalePreset,
   MembershipFunctionType,
   LINGUISTIC_SCALE_PRESETS,
@@ -100,6 +101,7 @@ function Dashboard() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [activationFn, setActivationFn] = useState<ActivationFunction>('sigmoid');
+  const [inferenceRule, setInferenceRule] = useState<InferenceRule>('modified-kosko');
   const [lambda, setLambda] = useState(1);
   const [maxIterations, setMaxIterations] = useState(25);
   const [convergenceThreshold, setConvergenceThreshold] = useState(0.001);
@@ -122,6 +124,9 @@ function Dashboard() {
   // Connect mode: click a source concept, then a target concept
   const [connectMode, setConnectMode] = useState(false);
   const [connectSourceId, setConnectSourceId] = useState<string | null>(null);
+
+  // Named what-if scenarios (persisted with the project)
+  const [scenarios, setScenarios] = useState<Scenario[]>([]);
 
   // Modals
   const [dataEditorOpen, setDataEditorOpen] = useState(false);
@@ -159,6 +164,7 @@ function Dashboard() {
       source: edge.source,
       target: edge.target,
       weight: (edge.data?.weight as number) || 0,
+      uncertainty: (edge.data?.uncertainty as number) || 0,
     }));
   }, [edges]);
 
@@ -182,7 +188,7 @@ function Dashboard() {
   } = useSimulation(
     fcmNodes,
     fcmEdges,
-    { activationFn, lambda, maxIterations, convergenceThreshold },
+    { activationFn, inferenceRule, lambda, maxIterations, convergenceThreshold },
     setNodes
   );
 
@@ -194,6 +200,7 @@ function Dashboard() {
   // Project persistence
   const projectConfig: ProjectConfig = {
     activationFunction: activationFn,
+    inferenceRule,
     lambda,
     maxIterations,
     convergenceThreshold,
@@ -209,6 +216,7 @@ function Dashboard() {
 
   const applyConfig = useCallback((config: ProjectConfig) => {
     setActivationFn(config.activationFunction);
+    setInferenceRule(config.inferenceRule ?? 'modified-kosko');
     setLambda(config.lambda);
     setMaxIterations(config.maxIterations ?? 25);
     setConvergenceThreshold(config.convergenceThreshold ?? 0.001);
@@ -232,7 +240,9 @@ function Dashboard() {
     setNodes,
     setEdges,
     config: projectConfig,
+    scenarios,
     applyConfig,
+    applyScenarios: setScenarios,
     onProjectSwitched,
   });
 
@@ -294,6 +304,12 @@ function Dashboard() {
   const updateEdgeWeightById = useCallback((edgeId: string, weight: number) => {
     setEdges((eds) =>
       eds.map((edge) => (edge.id === edgeId ? { ...edge, data: { ...edge.data, weight } } : edge))
+    );
+  }, [setEdges]);
+
+  const updateEdgeUncertainty = useCallback((edgeId: string, uncertainty: number) => {
+    setEdges((eds) =>
+      eds.map((edge) => (edge.id === edgeId ? { ...edge, data: { ...edge.data, uncertainty } } : edge))
     );
   }, [setEdges]);
 
@@ -487,6 +503,39 @@ function Dashboard() {
     toast.success(`Loaded sample "${sample.name}"`);
     window.setTimeout(() => fitView({ padding: 0.2, duration: 300 }), 80);
   }, [setNodes, setEdges, clearSimulation, fitView]);
+
+  // Scenario management: capture the map's current what-if configuration,
+  // remove one, or load one back onto the map
+  const captureScenario = useCallback((name: string) => {
+    const scenario: Scenario = {
+      id: `scn_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      name,
+      activations: Object.fromEntries(fcmNodes.map(n => [n.id, n.initialActivation])),
+      clampedIds: fcmNodes.filter(n => n.clamped).map(n => n.id),
+      createdAt: new Date().toISOString(),
+    };
+    setScenarios(prev => [...prev, scenario]);
+    toast.success(`Captured scenario "${name}"`);
+  }, [fcmNodes]);
+
+  const deleteScenario = useCallback((id: string) => {
+    setScenarios(prev => prev.filter(s => s.id !== id));
+  }, []);
+
+  const applyScenarioToMap = useCallback((scenario: Scenario) => {
+    setNodes(nds => nds.map(node => ({
+      ...node,
+      data: {
+        ...node.data,
+        initialActivation: scenario.activations[node.id] ?? (node.data.initialActivation as number),
+        activation: scenario.activations[node.id] ?? (node.data.initialActivation as number),
+        clamped: scenario.clampedIds.includes(node.id),
+      },
+    })));
+    clearSimulation();
+    setActiveTab('canvas');
+    toast.success(`Applied scenario "${scenario.name}" to the map`);
+  }, [setNodes, clearSimulation]);
 
   // ------------------------------------------------------------------
   // Presentation helpers
@@ -868,10 +917,15 @@ function Dashboard() {
                 edges={fcmEdges}
                 config={{
                   activationFunction: activationFn,
+                  inferenceRule,
                   lambda,
                   maxIterations,
                   convergenceThreshold,
                 }}
+                scenarios={scenarios}
+                onCaptureScenario={captureScenario}
+                onDeleteScenario={deleteScenario}
+                onApplyScenario={applyScenarioToMap}
                 theme={theme}
               />
             )}
@@ -1097,10 +1151,13 @@ function Dashboard() {
           onAddEdge={addEdgeBetween}
           onDeleteEdge={deleteEdge}
           onUpdateEdgeWeight={updateEdgeWeightById}
+          onUpdateEdgeUncertainty={updateEdgeUncertainty}
           onFlipEdge={flipEdge}
           onClearSelection={clearSelection}
           activationFn={activationFn}
           setActivationFn={setActivationFn}
+          inferenceRule={inferenceRule}
+          setInferenceRule={setInferenceRule}
           lambda={lambda}
           setLambda={setLambda}
           maxIterations={maxIterations}

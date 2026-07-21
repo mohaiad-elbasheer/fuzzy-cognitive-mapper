@@ -106,6 +106,7 @@ const ConvergenceView: React.FC<ConvergenceViewProps> = ({ run, theme }) => {
             { label: 'Iterations', value: String(run.iterations) },
             { label: 'Concepts', value: String(run.finalState.length) },
             { label: 'Activation Fn', value: run.config.activationFunction, capitalize: true },
+            { label: 'Rule', value: run.config.inferenceRule ?? 'modified-kosko' },
             { label: 'Lambda λ', value: String(run.config.lambda) },
             { label: 'Max Iterations', value: String(run.config.maxIterations) },
             { label: 'Convergence ε', value: run.config.convergenceThreshold.toExponential(0) },

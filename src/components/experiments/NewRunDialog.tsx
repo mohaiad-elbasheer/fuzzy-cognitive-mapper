@@ -99,7 +99,7 @@ const NewRunDialog: React.FC<NewRunDialogProps> = ({
                   {clampedCount > 0 && <> · {clampedCount} clamped</>}
                 </p>
                 <p className="font-mono text-xs">
-                  {config.activationFunction} · λ {config.lambda} · ≤{config.maxIterations} iterations · ε {config.convergenceThreshold.toExponential(0)}
+                  {config.activationFunction} · {config.inferenceRule ?? 'modified-kosko'} · λ {config.lambda} · ≤{config.maxIterations} iterations · ε {config.convergenceThreshold.toExponential(0)}
                 </p>
               </div>
             </div>

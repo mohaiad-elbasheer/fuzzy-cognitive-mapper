@@ -1,10 +1,11 @@
 import { useState, useCallback, Dispatch, SetStateAction } from 'react';
 import { Node } from '@xyflow/react';
-import { FCMNode, FCMEdge, ActivationFunction } from '../types';
+import { FCMNode, FCMEdge, ActivationFunction, InferenceRule } from '../types';
 import { runSimulation, SimulationOutcome } from '../logic/fcmEngine';
 
 interface SimulationParams {
   activationFn: ActivationFunction;
+  inferenceRule: InferenceRule;
   lambda: number;
   maxIterations: number;
   convergenceThreshold: number;
@@ -33,7 +34,10 @@ export function useSimulation(
         params.lambda,
         params.maxIterations,
         params.convergenceThreshold,
-        { clampedNodeIds: fcmNodes.filter(n => n.clamped).map(n => n.id) }
+        {
+          clampedNodeIds: fcmNodes.filter(n => n.clamped).map(n => n.id),
+          inferenceRule: params.inferenceRule,
+        }
       );
       setSimulation(outcome);
 
@@ -53,7 +57,7 @@ export function useSimulation(
     } finally {
       setIsSimulating(false);
     }
-  }, [fcmNodes, fcmEdges, params.activationFn, params.lambda, params.maxIterations, params.convergenceThreshold, setNodes]);
+  }, [fcmNodes, fcmEdges, params.activationFn, params.inferenceRule, params.lambda, params.maxIterations, params.convergenceThreshold, setNodes]);
 
   /** Clear results and restore node activations to their initial values. */
   const reset = useCallback(() => {
