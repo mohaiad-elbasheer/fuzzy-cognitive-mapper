@@ -106,7 +106,7 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
             )}>Causal Matrix</h2>
             <p className={cn(
               "text-xs font-bold uppercase tracking-wide transition-colors duration-500",
-              theme === 'modern' ? "text-white/30" : "text-slate-400"
+              theme === 'modern' ? "text-white/55" : "text-slate-500"
             )}>Direct Topology Configuration</p>
           </div>
         </div>
@@ -122,7 +122,7 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
                 "flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all",
                 inputMode === 'numeric' 
                   ? (theme === 'modern' ? "bg-white/10 text-emerald-400 shadow-sm" : "bg-white text-emerald-600 shadow-sm border border-slate-200") 
-                  : (theme === 'modern' ? "text-white/40 hover:text-white/60" : "text-slate-400 hover:text-slate-600")
+                  : (theme === 'modern' ? "text-white/60 hover:text-white/60" : "text-slate-500 hover:text-slate-600")
               )}
             >
               <Hash className="w-3.5 h-3.5" />
@@ -134,7 +134,7 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
                 "flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all",
                 inputMode === 'linguistic' 
                   ? (theme === 'modern' ? "bg-white/10 text-emerald-400 shadow-sm" : "bg-white text-emerald-600 shadow-sm border border-slate-200") 
-                  : (theme === 'modern' ? "text-white/40 hover:text-white/60" : "text-slate-400 hover:text-slate-600")
+                  : (theme === 'modern' ? "text-white/60 hover:text-white/60" : "text-slate-500 hover:text-slate-600")
               )}
             >
               <Languages className="w-3.5 h-3.5" />
@@ -213,7 +213,7 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
                 )}>
                   <div className={cn(
                     "flex items-center justify-between text-xs font-bold uppercase tracking-wide transition-colors duration-500",
-                    theme === 'modern' ? "text-white/20" : "text-slate-400"
+                    theme === 'modern' ? "text-white/60" : "text-slate-500"
                   )}>
                     <span>Source \ Target</span>
                     <ArrowRight className="w-3 h-3" />
@@ -248,6 +248,7 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
                       <div className="flex flex-col gap-1 min-w-0">
                         <input
                           type="text"
+                          aria-label="Concept name"
                           value={rowNode.data.label}
                           onChange={(e) => onUpdateNode(rowNode.id, { label: e.target.value })}
                           className={cn(
@@ -258,13 +259,14 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
                         <div className="flex items-center gap-2">
                           <span className={cn(
                             "text-xs uppercase font-bold tracking-wide transition-colors duration-500",
-                            theme === 'modern' ? "text-white/20" : "text-slate-400"
+                            theme === 'modern' ? "text-white/60" : "text-slate-500"
                           )}>Initial Act:</span>
                           <input
                             type="number"
                             step="0.1"
                             min="0"
                             max="1"
+                            aria-label={`Initial activation of ${(rowNode.data.label as string) || rowNode.id}`}
                             value={rowNode.data.initialActivation}
                             onChange={(e) => {
                               const value = sanitizeNumber(e.target.value, 0, 1);
@@ -279,9 +281,10 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
                       </div>
                       <button
                         onClick={() => onDeleteNode(rowNode.id)}
+                        aria-label={`Delete concept ${(rowNode.data.label as string) || rowNode.id}`}
                         className={cn(
-                          "p-2 rounded-lg transition-all opacity-0 group-hover:opacity-100",
-                          theme === 'modern' ? "text-white/10 hover:text-red-400 hover:bg-red-500/10" : "text-slate-300 hover:text-red-600 hover:bg-red-50"
+                          "p-2 rounded-lg transition-all opacity-100 sm:opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+                          theme === 'modern' ? "text-white/10 hover:text-red-400 hover:bg-red-500/10" : "text-slate-500 hover:text-red-600 hover:bg-red-50"
                         )}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -310,34 +313,34 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
                               step="0.1"
                               min="-1"
                               max="1"
+                              aria-label={`Weight from ${(rowNode.data.label as string) || rowNode.id} to ${(colNode.data.label as string) || colNode.id}`}
                               value={weight}
-                              disabled={isSelf}
                               onChange={(e) => {
                                 const value = sanitizeNumber(e.target.value, -1, 1);
                                 if (value !== null) onUpdateWeight(rowNode.id, colNode.id, value);
                               }}
                               className={cn(
                                 "w-full bg-transparent text-center text-xs font-bold outline-none transition-all py-2 rounded-lg border border-transparent focus:border-emerald-500/30",
-                                isSelf 
-                                  ? (theme === 'modern' ? "text-white/5 cursor-not-allowed" : "text-slate-200 cursor-not-allowed") 
+                                isSelf && weight === 0
+                                  ? (theme === 'modern' ? "text-white/60" : "text-slate-500")
                                   : (weight > 0 
                                       ? (theme === 'modern' ? "text-emerald-400" : "text-emerald-600") 
-                                      : (weight < 0 ? (theme === 'modern' ? "text-red-400" : "text-red-600") : (theme === 'modern' ? "text-white/20" : "text-slate-300")))
+                                      : (weight < 0 ? (theme === 'modern' ? "text-red-400" : "text-red-600") : (theme === 'modern' ? "text-white/60" : "text-slate-500")))
                               )}
                             />
                           ) : (
                             <div className="relative w-full group/select">
                               <select
-                                disabled={isSelf}
+                                aria-label={`Weight from ${(rowNode.data.label as string) || rowNode.id} to ${(colNode.data.label as string) || colNode.id}`}
                                 value={weight}
                                 onChange={(e) => onUpdateWeight(rowNode.id, colNode.id, parseFloat(e.target.value))}
                                 className={cn(
                                   "w-full bg-transparent text-center text-xs font-bold outline-none transition-all py-2 rounded-lg border border-transparent appearance-none cursor-pointer",
-                                  isSelf 
-                                    ? (theme === 'modern' ? "text-white/5 cursor-not-allowed" : "text-slate-200 cursor-not-allowed") 
+                                  isSelf && weight === 0
+                                    ? (theme === 'modern' ? "text-white/60" : "text-slate-500")
                                     : (weight > 0 
                                         ? (theme === 'modern' ? "text-emerald-400" : "text-emerald-600") 
-                                        : (weight < 0 ? (theme === 'modern' ? "text-red-400" : "text-red-600") : (theme === 'modern' ? "text-white/20" : "text-slate-300")))
+                                        : (weight < 0 ? (theme === 'modern' ? "text-red-400" : "text-red-600") : (theme === 'modern' ? "text-white/60" : "text-slate-500")))
                                 )}
                               >
                                 {linguisticTerms.map((term) => (
@@ -349,7 +352,7 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
                               {!isSelf && (
                                 <ChevronDown className={cn(
                                   "absolute right-1 top-1/2 -translate-y-1/2 w-2.5 h-2.5 pointer-events-none transition-colors",
-                                  theme === 'modern' ? "text-white/10 group-hover/select:text-white/30" : "text-slate-300 group-hover/select:text-slate-500"
+                                  theme === 'modern' ? "text-white/10 group-hover/select:text-white/55" : "text-slate-500 group-hover/select:text-slate-500"
                                 )} />
                               )}
                             </div>
@@ -389,7 +392,7 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
             </div>
             <p className={cn(
               "text-xs uppercase font-bold tracking-wide leading-relaxed transition-colors duration-500",
-              theme === 'modern' ? "text-white/30" : "text-slate-500"
+              theme === 'modern' ? "text-white/55" : "text-slate-500"
             )}>
               Weights range from <span className={theme === 'modern' ? "text-emerald-400" : "text-emerald-600"}>-1.0 to +1.0</span>. <br/>
               Zero values remove the causal link.
@@ -401,14 +404,14 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
               <div className={cn("w-2 h-2 rounded-full", theme === 'modern' ? "bg-emerald-500" : "bg-emerald-600")} />
               <span className={cn(
                 "text-xs uppercase font-bold tracking-wide transition-colors duration-500",
-                theme === 'modern' ? "text-white/40" : "text-slate-500"
+                theme === 'modern' ? "text-white/60" : "text-slate-500"
               )}>Positive Influence</span>
             </div>
             <div className="flex items-center gap-2">
               <div className={cn("w-2 h-2 rounded-full", theme === 'modern' ? "bg-red-500" : "bg-red-600")} />
               <span className={cn(
                 "text-xs uppercase font-bold tracking-wide transition-colors duration-500",
-                theme === 'modern' ? "text-white/40" : "text-slate-500"
+                theme === 'modern' ? "text-white/60" : "text-slate-500"
               )}>Negative Influence</span>
             </div>
           </div>
@@ -421,7 +424,7 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({
           <Languages className={cn("w-3.5 h-3.5", theme === 'modern' ? "text-emerald-400" : "text-emerald-600")} />
           <span className={cn(
             "text-xs uppercase font-bold tracking-wide transition-colors duration-500",
-            theme === 'modern' ? "text-white/40" : "text-slate-500"
+            theme === 'modern' ? "text-white/60" : "text-slate-500"
           )}>
             Fuzzy Mapping: <span className={theme === 'modern' ? "text-white" : "text-slate-900"}>{linguisticTerms.length}-Point Linguistic Scale</span>
           </span>

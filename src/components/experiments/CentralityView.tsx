@@ -26,7 +26,7 @@ const CentralityView: React.FC<CentralityViewProps> = ({ nodes, edges, theme }) 
           <thead>
             <tr className={cn(
               "text-left text-xs uppercase tracking-wider",
-              theme === 'modern' ? "text-white/40" : "text-slate-400"
+              theme === 'modern' ? "text-white/60" : "text-slate-500"
             )}>
               <th className="pb-3">Concept</th>
               <th className="pb-3 text-right">Out-Degree</th>
@@ -74,7 +74,7 @@ const CentralityView: React.FC<CentralityViewProps> = ({ nodes, edges, theme }) 
       </div>
       <div className={cn(
         "mt-4 p-3 rounded-lg text-xs",
-        theme === 'modern' ? "bg-white/5 text-white/50" : "bg-slate-50 text-slate-500"
+        theme === 'modern' ? "bg-white/5 text-white/60" : "bg-slate-50 text-slate-500"
       )}>
         <p><strong>Transmitter:</strong> High out-degree, influences many concepts</p>
         <p><strong>Receiver:</strong> High in-degree, influenced by many concepts</p>

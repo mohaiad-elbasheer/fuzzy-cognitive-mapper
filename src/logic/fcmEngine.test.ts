@@ -186,3 +186,45 @@ describe('limit cycle detection', () => {
     expect(outcome.limitCycle).toBeUndefined();
   });
 });
+
+describe('inference rules', () => {
+  const nodes = [node('a', 0.6), node('b', 0.4)];
+  const edges = [edge('a', 'b', 0.5)];
+  const sigmoid = (x: number) => 1 / (1 + Math.exp(-x));
+
+  it('kosko omits the self-memory term', () => {
+    const { steps } = runSimulation(nodes, edges, 'sigmoid', 1, 1, 1e-9, { inferenceRule: 'kosko' });
+    // b(1) = f(0.6 * 0.5); a(1) = f(0) since a has no incoming edges
+    expect(steps[1].b).toBeCloseTo(sigmoid(0.3), 10);
+    expect(steps[1].a).toBeCloseTo(sigmoid(0), 10);
+  });
+
+  it('modified-kosko adds the previous state (default behavior)', () => {
+    const { steps } = runSimulation(nodes, edges, 'sigmoid', 1, 1, 1e-9, { inferenceRule: 'modified-kosko' });
+    const legacy = runSimulation(nodes, edges, 'sigmoid', 1, 1, 1e-9);
+    // b(1) = f(0.6 * 0.5 + 0.4)
+    expect(steps[1].b).toBeCloseTo(sigmoid(0.7), 10);
+    expect(steps[1].b).toBeCloseTo(legacy.steps[1].b, 10); // default unchanged
+  });
+
+  it('rescaled maps activations to [−1,1] before combining', () => {
+    const { steps } = runSimulation(nodes, edges, 'sigmoid', 1, 1, 1e-9, { inferenceRule: 'rescaled' });
+    // b(1) = f( (2·0.6−1)·0.5 + (2·0.4−1) ) = f(0.1 − 0.2)
+    expect(steps[1].b).toBeCloseTo(sigmoid(-0.1), 10);
+  });
+
+  it('rescaled treats 0.5 as neutral: an all-0.5 sourceless map stays put', () => {
+    const neutral = [node('x', 0.5)];
+    const { steps, converged } = runSimulation(neutral, [], 'sigmoid', 1, 25, 1e-6, { inferenceRule: 'rescaled' });
+    expect(converged).toBe(true);
+    expect(steps[steps.length - 1].x).toBeCloseTo(0.5, 6);
+  });
+
+  it('self-loop edges feed a concept back into itself', () => {
+    const selfNodes = [node('a', 0.8)];
+    const selfEdge = [edge('a', 'a', -1)];
+    const withLoop = runSimulation(selfNodes, selfEdge, 'sigmoid', 1, 1, 1e-9, { inferenceRule: 'kosko' });
+    // a(1) = f(w_aa · a) = f(−0.8)
+    expect(withLoop.steps[1].a).toBeCloseTo(sigmoid(-0.8), 10);
+  });
+});

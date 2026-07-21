@@ -15,8 +15,13 @@ Fuzzy Cognitive Maps are soft computing models that represent causal relationshi
 ### Core Functionality
 - **Visual Graph Editor** - Create and edit FCM models with intuitive drag-and-drop
 - **Real-time Simulation** - Run inference with five activation functions (sigmoid, tanh, bivalent, trivalent, linear)
+- **Three Inference Rules** - Kosko, modified Kosko, and Papageorgiou's rescaled rule; self-loops supported
 - **Convergence Reporting** - Fixed-point detection, limit-cycle detection, and configurable max iterations / threshold
 - **Scenario Clamping** - Lock concepts at their initial activation to model what-if scenarios
+- **Scenario Manager** - Capture named what-if configurations and compare their outcomes in a batch table
+- **Monte Carlo Uncertainty** - Per-edge weight uncertainty sampled into outcome distributions (p05-p95 bands)
+- **Feedback-Loop Analysis** - Enumerates loops and classifies them as reinforcing or balancing
+- **Reproducible Experiments** - Runs record the full weight matrix, settings, clamps, and app version
 - **Configurable Linguistic Scales** - 5, 7, 9, or 11-point scales
 - **Membership Function Visualization** - Triangular, Trapezoidal, Gaussian
 
@@ -87,16 +92,21 @@ CI runs lint, typecheck, tests, and the production build on every pull request.
 
 ## FCM Theory
 
-### Inference Formula
+### Inference Rules
 
 ```
-A_i(k+1) = f( Σ A_j(k) · w_ji + A_i(k) )
+Kosko:           A_i(k+1) = f( Σ A_j(k) · w_ji )
+Modified Kosko:  A_i(k+1) = f( Σ A_j(k) · w_ji + A_i(k) )
+Rescaled:        A_i(k+1) = f( Σ (2A_j(k)−1) · w_ji + (2A_i(k)−1) )
 ```
 
 Where:
 - `A_i(k)` is the activation of concept i at iteration k
 - `w_ji` is the causal weight from concept j to concept i
 - `f` is the activation function (sigmoid, tanh, etc.)
+
+The rescaled rule (Papageorgiou 2011) mitigates sigmoid saturation and
+treats 0.5 as a neutral state rather than a positive activation.
 
 ## License
 

@@ -15,11 +15,14 @@ import {
   FCMNode,
   FCMEdge,
   ActivationFunction,
+  InferenceRule,
+  INFERENCE_RULE_INFO,
   LinguisticScalePreset,
   MembershipFunctionType,
   LinguisticTerm,
 } from '../types';
 import { cn } from '../lib/utils';
+import { checkModel } from '../lib/analysis/loops';
 import AdvancedParameters from './AdvancedParameters';
 
 interface InspectorProps {
@@ -32,10 +35,13 @@ interface InspectorProps {
   onAddEdge: (sourceId: string, targetId: string, weight: number) => void;
   onDeleteEdge: (edgeId: string) => void;
   onUpdateEdgeWeight: (edgeId: string, weight: number) => void;
+  onUpdateEdgeUncertainty: (edgeId: string, uncertainty: number) => void;
   onFlipEdge: (edgeId: string) => void;
   onClearSelection: () => void;
   activationFn: ActivationFunction;
   setActivationFn: (fn: ActivationFunction) => void;
+  inferenceRule: InferenceRule;
+  setInferenceRule: (rule: InferenceRule) => void;
   lambda: number;
   setLambda: (val: number) => void;
   maxIterations: number;
@@ -57,7 +63,7 @@ interface InspectorProps {
 const SectionLabel: React.FC<{ children: React.ReactNode; theme: 'modern' | 'academic' }> = ({ children, theme }) => (
   <label className={cn(
     "text-xs font-semibold uppercase tracking-wider block",
-    theme === 'modern' ? "text-white/50" : "text-slate-500"
+    theme === 'modern' ? "text-white/60" : "text-slate-500"
   )}>
     {children}
   </label>
@@ -78,10 +84,13 @@ const Inspector: React.FC<InspectorProps> = ({
   onAddEdge,
   onDeleteEdge,
   onUpdateEdgeWeight,
+  onUpdateEdgeUncertainty,
   onFlipEdge,
   onClearSelection,
   activationFn,
   setActivationFn,
+  inferenceRule,
+  setInferenceRule,
   lambda,
   setLambda,
   maxIterations,
@@ -99,6 +108,7 @@ const Inspector: React.FC<InspectorProps> = ({
   theme = 'modern',
 }) => {
   const [newEdgeTarget, setNewEdgeTarget] = useState('');
+  const modelWarnings = checkModel(nodes, edges);
 
   const selectedEdge = selectedEdgeId ? edges.find(e => e.id === selectedEdgeId) ?? null : null;
   const selectedNode = !selectedEdge && selectedNodeId ? nodes.find(n => n.id === selectedNodeId) ?? null : null;
@@ -115,7 +125,7 @@ const Inspector: React.FC<InspectorProps> = ({
       onClick={onClearSelection}
       className={cn(
         "flex items-center gap-2 text-sm font-medium mb-4 px-2 py-1.5 -ml-2 rounded-lg transition-colors",
-        theme === 'modern' ? "text-white/50 hover:text-white hover:bg-white/5" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+        theme === 'modern' ? "text-white/60 hover:text-white hover:bg-white/5" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
       )}
     >
       <ArrowLeft className="w-4 h-4" />
@@ -144,7 +154,7 @@ const Inspector: React.FC<InspectorProps> = ({
           theme === 'modern' ? "bg-white/5 border-white/10 text-white/80" : "bg-slate-50 border-slate-200 text-slate-700"
         )}>
           <span className="font-medium truncate max-w-[110px]">{source?.label ?? edge.source}</span>
-          <ArrowRight className={cn("w-4 h-4 shrink-0", theme === 'modern' ? "text-white/40" : "text-slate-400")} />
+          <ArrowRight className={cn("w-4 h-4 shrink-0", theme === 'modern' ? "text-white/60" : "text-slate-500")} />
           <span className="font-medium truncate max-w-[110px]">{target?.label ?? edge.target}</span>
         </div>
 
@@ -168,7 +178,7 @@ const Inspector: React.FC<InspectorProps> = ({
             <SectionLabel theme={theme}>Weight</SectionLabel>
             <span className={cn(
               "text-lg font-bold font-mono",
-              weight > 0 ? "text-emerald-500" : weight < 0 ? "text-red-500" : (theme === 'modern' ? "text-white/30" : "text-slate-300")
+              weight > 0 ? "text-emerald-500" : weight < 0 ? "text-red-500" : (theme === 'modern' ? "text-white/55" : "text-slate-500")
             )}>
               {weight > 0 ? '+' : ''}{weight.toFixed(2)}
             </span>
@@ -188,12 +198,38 @@ const Inspector: React.FC<InspectorProps> = ({
           />
           <div className={cn(
             "flex justify-between text-xs",
-            theme === 'modern' ? "text-white/40" : "text-slate-400"
+            theme === 'modern' ? "text-white/60" : "text-slate-500"
           )}>
             <span>−1 inhibits</span>
             <span>0</span>
             <span>+1 promotes</span>
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex justify-between items-end">
+            <SectionLabel theme={theme}>Uncertainty ±</SectionLabel>
+            <span className={cn("text-sm font-mono font-semibold", theme === 'modern' ? "text-white/70" : "text-slate-600")}>
+              {(edge.uncertainty ?? 0).toFixed(2)}
+            </span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="0.5"
+            step="0.05"
+            value={edge.uncertainty ?? 0}
+            aria-label="Weight uncertainty"
+            onChange={(e) => onUpdateEdgeUncertainty(edge.id, parseFloat(e.target.value))}
+            className={cn(
+              "w-full h-2 rounded-full appearance-none cursor-pointer accent-amber-500",
+              theme === 'modern' ? "bg-white/10" : "bg-slate-200"
+            )}
+          />
+          <p className={cn("text-xs leading-relaxed", theme === 'modern' ? "text-white/60" : "text-slate-500")}>
+            How confident are you in this weight? Non-zero values feed the
+            Monte Carlo uncertainty analysis in Experiments.
+          </p>
         </div>
 
         <p className={cn(
@@ -238,7 +274,7 @@ const Inspector: React.FC<InspectorProps> = ({
   // ------------------------------------------------------------------
   const renderNodeEditor = (node: FCMNode) => {
     const outgoing = edges.filter(e => e.source === node.id);
-    const availableTargets = nodes.filter(n => n.id !== node.id && !outgoing.some(e => e.target === n.id));
+    const availableTargets = nodes.filter(n => !outgoing.some(e => e.target === n.id));
 
     return (
       <div className="p-5 space-y-6">
@@ -292,7 +328,7 @@ const Inspector: React.FC<InspectorProps> = ({
           {node.clamped ? <Lock className="w-4 h-4 shrink-0" /> : <Unlock className="w-4 h-4 shrink-0" />}
           <span>
             <span className="font-medium block">{node.clamped ? 'Clamped (scenario input)' : 'Free to evolve'}</span>
-            <span className={cn("text-xs", theme === 'modern' ? "text-white/40" : "text-slate-400")}>
+            <span className={cn("text-xs", theme === 'modern' ? "text-white/60" : "text-slate-500")}>
               {node.clamped
                 ? 'Held at its initial value during simulation'
                 : 'Click to hold this concept fixed during simulation'}
@@ -303,7 +339,7 @@ const Inspector: React.FC<InspectorProps> = ({
         <div className="space-y-3">
           <SectionLabel theme={theme}>Outgoing connections ({outgoing.length})</SectionLabel>
           {outgoing.length === 0 ? (
-            <p className={cn("text-sm", theme === 'modern' ? "text-white/30" : "text-slate-400")}>
+            <p className={cn("text-sm", theme === 'modern' ? "text-white/55" : "text-slate-500")}>
               No connections yet.
             </p>
           ) : (
@@ -316,7 +352,7 @@ const Inspector: React.FC<InspectorProps> = ({
                     theme === 'modern' ? "bg-white/5 border-white/10" : "bg-slate-50 border-slate-200"
                   )}>
                     <div className="flex items-center gap-2 min-w-0">
-                      <ArrowRight className={cn("w-3.5 h-3.5 shrink-0", theme === 'modern' ? "text-white/30" : "text-slate-400")} />
+                      <ArrowRight className={cn("w-3.5 h-3.5 shrink-0", theme === 'modern' ? "text-white/55" : "text-slate-500")} />
                       <span className={cn("text-sm truncate", theme === 'modern' ? "text-white/70" : "text-slate-600")}>
                         {target?.label}
                       </span>
@@ -324,7 +360,7 @@ const Inspector: React.FC<InspectorProps> = ({
                     <div className="flex items-center gap-2 shrink-0">
                       <span className={cn(
                         "text-sm font-mono font-semibold",
-                        edge.weight > 0 ? "text-emerald-500" : edge.weight < 0 ? "text-red-500" : (theme === 'modern' ? "text-white/30" : "text-slate-400")
+                        edge.weight > 0 ? "text-emerald-500" : edge.weight < 0 ? "text-red-500" : (theme === 'modern' ? "text-white/55" : "text-slate-500")
                       )}>
                         {edge.weight > 0 ? '+' : ''}{edge.weight.toFixed(1)}
                       </span>
@@ -333,7 +369,7 @@ const Inspector: React.FC<InspectorProps> = ({
                         aria-label={`Delete connection to ${target?.label ?? edge.target}`}
                         className={cn(
                           "p-1.5 rounded transition-colors",
-                          theme === 'modern' ? "text-white/30 hover:text-red-400" : "text-slate-400 hover:text-red-600"
+                          theme === 'modern' ? "text-white/55 hover:text-red-400" : "text-slate-500 hover:text-red-600"
                         )}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -355,7 +391,9 @@ const Inspector: React.FC<InspectorProps> = ({
               >
                 <option value="" className={theme === 'modern' ? "bg-[#0a0a14]" : "bg-white"}>Connect to…</option>
                 {availableTargets.map(n => (
-                  <option key={n.id} value={n.id} className={theme === 'modern' ? "bg-[#0a0a14]" : "bg-white"}>{n.label}</option>
+                  <option key={n.id} value={n.id} className={theme === 'modern' ? "bg-[#0a0a14]" : "bg-white"}>
+                    {n.id === node.id ? `${n.label} (self-loop)` : n.label}
+                  </option>
                 ))}
               </select>
               <button
@@ -419,19 +457,38 @@ const Inspector: React.FC<InspectorProps> = ({
                 "py-2.5 px-3 text-sm font-medium rounded-lg transition-colors",
                 activationFn === fn
                   ? (theme === 'modern' ? "bg-white/10 text-emerald-400" : "bg-white text-emerald-600 shadow-sm border border-slate-200")
-                  : (theme === 'modern' ? "text-white/50 hover:text-white/80" : "text-slate-400 hover:text-slate-600")
+                  : (theme === 'modern' ? "text-white/60 hover:text-white/80" : "text-slate-500 hover:text-slate-600")
               )}
             >
               {label}
             </button>
           ))}
         </div>
-        <p className={cn("text-xs leading-relaxed", theme === 'modern' ? "text-white/40" : "text-slate-400")}>
+        <p className={cn("text-xs leading-relaxed", theme === 'modern' ? "text-white/60" : "text-slate-500")}>
           {activationFn === 'sigmoid' && 'Continuous, activations stay in [0, 1].'}
           {activationFn === 'tanh' && 'Continuous, activations range across [−1, 1].'}
           {activationFn === 'bivalent' && 'Binary on/off: activations are 0 or 1.'}
           {activationFn === 'trivalent' && 'Three states: −1, 0, or +1.'}
           {activationFn === 'linear' && 'Linear scaling, clamped to [0, 1].'}
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <SectionLabel theme={theme}>Inference rule</SectionLabel>
+        <select
+          value={inferenceRule}
+          aria-label="Inference rule"
+          onChange={(e) => setInferenceRule(e.target.value as InferenceRule)}
+          className={inputClass}
+        >
+          {(Object.keys(INFERENCE_RULE_INFO) as InferenceRule[]).map(rule => (
+            <option key={rule} value={rule} className={theme === 'modern' ? "bg-[#0a0a14]" : "bg-white"}>
+              {INFERENCE_RULE_INFO[rule].name} — {INFERENCE_RULE_INFO[rule].formula}
+            </option>
+          ))}
+        </select>
+        <p className={cn("text-xs leading-relaxed", theme === 'modern' ? "text-white/60" : "text-slate-500")}>
+          {INFERENCE_RULE_INFO[inferenceRule].description}
         </p>
       </div>
 
@@ -498,6 +555,22 @@ const Inspector: React.FC<InspectorProps> = ({
         )}
       </div>
 
+      {modelWarnings.length > 0 && (
+        <div className={cn(
+          "p-3 rounded-xl border space-y-2",
+          theme === 'modern' ? "bg-amber-500/5 border-amber-500/20" : "bg-amber-50 border-amber-200"
+        )} role="status">
+          <p className={cn("text-xs font-semibold uppercase tracking-wider", theme === 'modern' ? "text-amber-400" : "text-amber-700")}>
+            Model checks
+          </p>
+          {modelWarnings.map((w, i) => (
+            <p key={i} className={cn("text-xs leading-relaxed", theme === 'modern' ? "text-white/60" : "text-slate-600")}>
+              {w.message}
+            </p>
+          ))}
+        </div>
+      )}
+
       {showRunButton ? (
         <button
           onClick={onRunSimulation}
@@ -513,7 +586,7 @@ const Inspector: React.FC<InspectorProps> = ({
       ) : (
         <p className={cn(
           "text-xs leading-relaxed",
-          theme === 'modern' ? "text-white/40" : "text-slate-400"
+          theme === 'modern' ? "text-white/60" : "text-slate-500"
         )}>
           These settings apply to new experiment runs and to the map simulation.
         </p>

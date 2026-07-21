@@ -134,7 +134,7 @@ const MembershipVisualization: React.FC<{
             />
             <span className={cn(
               "text-[7px] uppercase tracking-wide",
-              theme === 'modern' ? "text-white/40" : "text-slate-500"
+              theme === 'modern' ? "text-white/60" : "text-slate-500"
             )}>
               {term.label.replace(' −', '−').replace(' +', '+')}
             </span>
@@ -143,7 +143,7 @@ const MembershipVisualization: React.FC<{
         {terms.length > 5 && (
           <span className={cn(
             "text-[7px]",
-            theme === 'modern' ? "text-white/20" : "text-slate-400"
+            theme === 'modern' ? "text-white/60" : "text-slate-500"
           )}>
             +{terms.length - 5} more
           </span>
@@ -188,7 +188,7 @@ const AdvancedParameters: React.FC<AdvancedParametersProps> = ({
           )}>
             <Sliders className={cn(
               "w-4 h-4",
-              theme === 'modern' ? "text-white/40" : "text-slate-400"
+              theme === 'modern' ? "text-white/60" : "text-slate-500"
             )} />
           </div>
           <div className="text-left">
@@ -200,16 +200,16 @@ const AdvancedParameters: React.FC<AdvancedParametersProps> = ({
             </span>
             <span className={cn(
               "text-xs uppercase tracking-wide",
-              theme === 'modern' ? "text-white/30" : "text-slate-400"
+              theme === 'modern' ? "text-white/55" : "text-slate-500"
             )}>
               {scaleInfo.name} Scale • {membershipInfo.name}
             </span>
           </div>
         </div>
         {isExpanded ? (
-          <ChevronDown className={cn("w-4 h-4", theme === 'modern' ? "text-white/40" : "text-slate-400")} />
+          <ChevronDown className={cn("w-4 h-4", theme === 'modern' ? "text-white/60" : "text-slate-500")} />
         ) : (
-          <ChevronRight className={cn("w-4 h-4", theme === 'modern' ? "text-white/40" : "text-slate-400")} />
+          <ChevronRight className={cn("w-4 h-4", theme === 'modern' ? "text-white/60" : "text-slate-500")} />
         )}
       </button>
 
@@ -231,7 +231,7 @@ const AdvancedParameters: React.FC<AdvancedParametersProps> = ({
               <div className="space-y-2">
                 <label className={cn(
                   "text-xs font-bold uppercase tracking-wide flex items-center gap-2",
-                  theme === 'modern' ? "text-white/40" : "text-slate-500"
+                  theme === 'modern' ? "text-white/60" : "text-slate-500"
                 )}>
                   Linguistic Scale
                   <div className="group relative">
@@ -259,8 +259,8 @@ const AdvancedParameters: React.FC<AdvancedParametersProps> = ({
                               ? "bg-emerald-500/20 text-emerald-400 shadow-sm" 
                               : "bg-emerald-50 text-emerald-700 border border-emerald-200")
                           : (theme === 'modern' 
-                              ? "text-white/40 hover:text-white/60 hover:bg-white/5" 
-                              : "text-slate-400 hover:text-slate-600 hover:bg-slate-50")
+                              ? "text-white/60 hover:text-white/60 hover:bg-white/5" 
+                              : "text-slate-500 hover:text-slate-600 hover:bg-slate-50")
                       )}
                     >
                       {LINGUISTIC_SCALE_INFO[scale].name}
@@ -275,7 +275,7 @@ const AdvancedParameters: React.FC<AdvancedParametersProps> = ({
                 </div>
                 <p className={cn(
                   "text-xs italic",
-                  theme === 'modern' ? "text-white/20" : "text-slate-400"
+                  theme === 'modern' ? "text-white/60" : "text-slate-500"
                 )}>
                   {scaleInfo.description}
                 </p>
@@ -285,7 +285,7 @@ const AdvancedParameters: React.FC<AdvancedParametersProps> = ({
               <div className="space-y-2">
                 <label className={cn(
                   "text-xs font-bold uppercase tracking-wide flex items-center gap-2",
-                  theme === 'modern' ? "text-white/40" : "text-slate-500"
+                  theme === 'modern' ? "text-white/60" : "text-slate-500"
                 )}>
                   Membership Function
                   <div className="group relative">
@@ -313,8 +313,8 @@ const AdvancedParameters: React.FC<AdvancedParametersProps> = ({
                               ? "bg-emerald-500/20 text-emerald-400 shadow-sm" 
                               : "bg-emerald-50 text-emerald-700 border border-emerald-200")
                           : (theme === 'modern' 
-                              ? "text-white/40 hover:text-white/60 hover:bg-white/5" 
-                              : "text-slate-400 hover:text-slate-600 hover:bg-slate-50")
+                              ? "text-white/60 hover:text-white/60 hover:bg-white/5" 
+                              : "text-slate-500 hover:text-slate-600 hover:bg-slate-50")
                       )}
                     >
                       {MEMBERSHIP_FUNCTION_INFO[fn].name}
@@ -323,7 +323,7 @@ const AdvancedParameters: React.FC<AdvancedParametersProps> = ({
                 </div>
                 <p className={cn(
                   "text-xs italic",
-                  theme === 'modern' ? "text-white/20" : "text-slate-400"
+                  theme === 'modern' ? "text-white/60" : "text-slate-500"
                 )}>
                   {membershipInfo.description}
                 </p>
@@ -336,7 +336,7 @@ const AdvancedParameters: React.FC<AdvancedParametersProps> = ({
                   "w-full text-xs font-bold uppercase tracking-wide py-2 rounded-lg border transition-all",
                   showVisualization
                     ? (theme === 'modern' ? "bg-white/10 border-white/20 text-white/60" : "bg-slate-100 border-slate-300 text-slate-600")
-                    : (theme === 'modern' ? "border-white/10 text-white/30 hover:text-white/50 hover:border-white/20" : "border-slate-200 text-slate-400 hover:text-slate-500 hover:border-slate-300")
+                    : (theme === 'modern' ? "border-white/10 text-white/55 hover:text-white/60 hover:border-white/20" : "border-slate-200 text-slate-500 hover:text-slate-500 hover:border-slate-300")
                 )}
               >
                 {showVisualization ? 'Hide' : 'Show'} Visualization

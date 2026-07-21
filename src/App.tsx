@@ -24,13 +24,14 @@ import FCMEdgeComponent from './components/FCMEdge';
 import Toaster from './components/Toaster';
 import Walkthrough from './components/Walkthrough';
 import FileMenu from './components/FileMenu';
-import { ProjectConfig } from './lib/storage';
+import { ProjectConfig, Scenario } from './lib/storage';
 import { SampleModel } from './lib/samples';
 import { toast } from './lib/toast';
 import {
   FCMNode,
   FCMEdge,
   ActivationFunction,
+  InferenceRule,
   LinguisticScalePreset,
   MembershipFunctionType,
   LINGUISTIC_SCALE_PRESETS,
@@ -61,7 +62,7 @@ const edgeTypes = {
 const TabLoading = ({ theme }: { theme: 'modern' | 'academic' }) => (
   <div className={cn(
     "h-full w-full flex items-center justify-center text-sm",
-    theme === 'modern' ? "text-white/40" : "text-slate-400"
+    theme === 'modern' ? "text-white/60" : "text-slate-500"
   )}>
     Loading…
   </div>
@@ -100,6 +101,7 @@ function Dashboard() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [activationFn, setActivationFn] = useState<ActivationFunction>('sigmoid');
+  const [inferenceRule, setInferenceRule] = useState<InferenceRule>('modified-kosko');
   const [lambda, setLambda] = useState(1);
   const [maxIterations, setMaxIterations] = useState(25);
   const [convergenceThreshold, setConvergenceThreshold] = useState(0.001);
@@ -122,6 +124,9 @@ function Dashboard() {
   // Connect mode: click a source concept, then a target concept
   const [connectMode, setConnectMode] = useState(false);
   const [connectSourceId, setConnectSourceId] = useState<string | null>(null);
+
+  // Named what-if scenarios (persisted with the project)
+  const [scenarios, setScenarios] = useState<Scenario[]>([]);
 
   // Modals
   const [dataEditorOpen, setDataEditorOpen] = useState(false);
@@ -159,6 +164,7 @@ function Dashboard() {
       source: edge.source,
       target: edge.target,
       weight: (edge.data?.weight as number) || 0,
+      uncertainty: (edge.data?.uncertainty as number) || 0,
     }));
   }, [edges]);
 
@@ -182,7 +188,7 @@ function Dashboard() {
   } = useSimulation(
     fcmNodes,
     fcmEdges,
-    { activationFn, lambda, maxIterations, convergenceThreshold },
+    { activationFn, inferenceRule, lambda, maxIterations, convergenceThreshold },
     setNodes
   );
 
@@ -194,6 +200,7 @@ function Dashboard() {
   // Project persistence
   const projectConfig: ProjectConfig = {
     activationFunction: activationFn,
+    inferenceRule,
     lambda,
     maxIterations,
     convergenceThreshold,
@@ -209,6 +216,7 @@ function Dashboard() {
 
   const applyConfig = useCallback((config: ProjectConfig) => {
     setActivationFn(config.activationFunction);
+    setInferenceRule(config.inferenceRule ?? 'modified-kosko');
     setLambda(config.lambda);
     setMaxIterations(config.maxIterations ?? 25);
     setConvergenceThreshold(config.convergenceThreshold ?? 0.001);
@@ -232,7 +240,9 @@ function Dashboard() {
     setNodes,
     setEdges,
     config: projectConfig,
+    scenarios,
     applyConfig,
+    applyScenarios: setScenarios,
     onProjectSwitched,
   });
 
@@ -252,18 +262,18 @@ function Dashboard() {
     newProject: createNewProject,
   });
 
-  // Escape exits connect mode
+  // Escape exits connect mode / closes the data editor
   useEffect(() => {
-    if (!connectMode) return;
+    if (!connectMode && !dataEditorOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setConnectMode(false);
-        setConnectSourceId(null);
-      }
+      if (e.key !== 'Escape') return;
+      if (dataEditorOpen) setDataEditorOpen(false);
+      setConnectMode(false);
+      setConnectSourceId(null);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [connectMode]);
+  }, [connectMode, dataEditorOpen]);
 
   // ------------------------------------------------------------------
   // Graph mutations (undo history is recorded automatically)
@@ -294,6 +304,12 @@ function Dashboard() {
   const updateEdgeWeightById = useCallback((edgeId: string, weight: number) => {
     setEdges((eds) =>
       eds.map((edge) => (edge.id === edgeId ? { ...edge, data: { ...edge.data, weight } } : edge))
+    );
+  }, [setEdges]);
+
+  const updateEdgeUncertainty = useCallback((edgeId: string, uncertainty: number) => {
+    setEdges((eds) =>
+      eds.map((edge) => (edge.id === edgeId ? { ...edge, data: { ...edge.data, uncertainty } } : edge))
     );
   }, [setEdges]);
 
@@ -488,6 +504,39 @@ function Dashboard() {
     window.setTimeout(() => fitView({ padding: 0.2, duration: 300 }), 80);
   }, [setNodes, setEdges, clearSimulation, fitView]);
 
+  // Scenario management: capture the map's current what-if configuration,
+  // remove one, or load one back onto the map
+  const captureScenario = useCallback((name: string) => {
+    const scenario: Scenario = {
+      id: `scn_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      name,
+      activations: Object.fromEntries(fcmNodes.map(n => [n.id, n.initialActivation])),
+      clampedIds: fcmNodes.filter(n => n.clamped).map(n => n.id),
+      createdAt: new Date().toISOString(),
+    };
+    setScenarios(prev => [...prev, scenario]);
+    toast.success(`Captured scenario "${name}"`);
+  }, [fcmNodes]);
+
+  const deleteScenario = useCallback((id: string) => {
+    setScenarios(prev => prev.filter(s => s.id !== id));
+  }, []);
+
+  const applyScenarioToMap = useCallback((scenario: Scenario) => {
+    setNodes(nds => nds.map(node => ({
+      ...node,
+      data: {
+        ...node.data,
+        initialActivation: scenario.activations[node.id] ?? (node.data.initialActivation as number),
+        activation: scenario.activations[node.id] ?? (node.data.initialActivation as number),
+        clamped: scenario.clampedIds.includes(node.id),
+      },
+    })));
+    clearSimulation();
+    setActiveTab('canvas');
+    toast.success(`Applied scenario "${scenario.name}" to the map`);
+  }, [setNodes, clearSimulation]);
+
   // ------------------------------------------------------------------
   // Presentation helpers
   // ------------------------------------------------------------------
@@ -622,7 +671,7 @@ function Dashboard() {
                     aria-label="Cancel rename"
                     className={cn(
                       "p-1.5 rounded-md transition-colors",
-                      theme === 'modern' ? "text-white/40 hover:text-white hover:bg-white/10" : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                      theme === 'modern' ? "text-white/60 hover:text-white hover:bg-white/10" : "text-slate-500 hover:text-slate-600 hover:bg-slate-100"
                     )}
                   >
                     <X className="w-4 h-4" />
@@ -645,7 +694,7 @@ function Dashboard() {
                   </span>
                   <Edit3 className={cn(
                     "w-3.5 h-3.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity",
-                    theme === 'modern' ? "text-white/40" : "text-slate-400"
+                    theme === 'modern' ? "text-white/60" : "text-slate-500"
                   )} />
                 </button>
               )}
@@ -662,7 +711,7 @@ function Dashboard() {
                 )} />
                 <span className={cn(
                   "text-xs hidden md:inline",
-                  theme === 'modern' ? "text-white/40" : "text-slate-400"
+                  theme === 'modern' ? "text-white/60" : "text-slate-500"
                 )}>
                   {saveStatus === 'saved' ? 'Saved' : saveStatus === 'saving' ? 'Saving…' : 'Unsaved'}
                 </span>
@@ -684,7 +733,7 @@ function Dashboard() {
                     "flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-md text-xs font-semibold transition-all",
                     activeTab === id
                       ? (theme === 'modern' ? "bg-white/10 text-emerald-400" : "bg-white text-emerald-600 shadow-sm")
-                      : (theme === 'modern' ? "text-white/40 hover:text-white/70" : "text-slate-400 hover:text-slate-600")
+                      : (theme === 'modern' ? "text-white/60 hover:text-white/70" : "text-slate-500 hover:text-slate-600")
                   )}
                   title={label}
                   aria-label={label}
@@ -802,7 +851,7 @@ function Dashboard() {
                       <h2 className={cn("text-lg font-bold mb-1", theme === 'modern' ? "text-white" : "text-slate-900")}>
                         Start your causal map
                       </h2>
-                      <p className={cn("text-sm mb-6", theme === 'modern' ? "text-white/50" : "text-slate-500")}>
+                      <p className={cn("text-sm mb-6", theme === 'modern' ? "text-white/60" : "text-slate-500")}>
                         Add concepts, connect causes to effects, then run a simulation.
                       </p>
                       <div className="flex flex-col gap-2">
@@ -835,7 +884,7 @@ function Dashboard() {
                             Quick tour
                           </button>
                         </div>
-                        <p className={cn("text-xs mt-2", theme === 'modern' ? "text-white/40" : "text-slate-400")}>
+                        <p className={cn("text-xs mt-2", theme === 'modern' ? "text-white/60" : "text-slate-500")}>
                           Or load a sample from <span className="font-medium">File → Open Sample</span>
                         </p>
                       </div>
@@ -868,10 +917,15 @@ function Dashboard() {
                 edges={fcmEdges}
                 config={{
                   activationFunction: activationFn,
+                  inferenceRule,
                   lambda,
                   maxIterations,
                   convergenceThreshold,
                 }}
+                scenarios={scenarios}
+                onCaptureScenario={captureScenario}
+                onDeleteScenario={deleteScenario}
+                onApplyScenario={applyScenarioToMap}
                 theme={theme}
               />
             )}
@@ -888,7 +942,7 @@ function Dashboard() {
                   disabled={isSimulating || nodes.length === 0}
                   className={cn(
                     "flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all disabled:opacity-50",
-                    theme === 'modern' ? "bg-emerald-500 text-[#0a0a14] hover:bg-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]" : "bg-emerald-600 text-white hover:bg-emerald-700"
+                    theme === 'modern' ? "bg-emerald-500 text-[#0a0a14] hover:bg-emerald-400" : "bg-emerald-600 text-white hover:bg-emerald-700"
                   )}
                 >
                   <Play className={cn("w-4 h-4 fill-current", isSimulating && "animate-pulse")} />
@@ -934,12 +988,12 @@ function Dashboard() {
                   <div>
                     <h3 className={cn(
                       "text-xs font-semibold uppercase tracking-wider transition-colors duration-500",
-                      theme === 'modern' ? "text-white/50" : "text-slate-500"
+                      theme === 'modern' ? "text-white/60" : "text-slate-500"
                     )}>Simulation Output</h3>
                     {!resultsCollapsed && simulationResults.length > 0 && (
                       <p className={cn(
                         "text-xs mt-0.5 transition-colors duration-500",
-                        theme === 'modern' ? "text-white/30" : "text-slate-400"
+                        theme === 'modern' ? "text-white/55" : "text-slate-500"
                       )}>Convergence across {simulation?.iterations ?? 0} iterations</p>
                     )}
                   </div>
@@ -998,7 +1052,7 @@ function Dashboard() {
                 )}>
                   <h4 className={cn(
                     "text-xs font-semibold uppercase tracking-wider mb-4 transition-colors duration-500",
-                    theme === 'modern' ? "text-white/40" : "text-slate-400"
+                    theme === 'modern' ? "text-white/60" : "text-slate-500"
                   )}>Final Vector</h4>
                   {simulationResults.length > 0 ? (
                     <div className="space-y-4">
@@ -1033,7 +1087,7 @@ function Dashboard() {
                               </div>
                               <span className={cn(
                                 "text-xs font-semibold shrink-0",
-                                diff > 0 ? "text-emerald-500" : diff < 0 ? "text-red-500" : (theme === 'modern' ? "text-white/20" : "text-slate-300")
+                                diff > 0 ? "text-emerald-500" : diff < 0 ? "text-red-500" : (theme === 'modern' ? "text-white/60" : "text-slate-500")
                               )} aria-label={diff > 0 ? 'increased' : diff < 0 ? 'decreased' : 'unchanged'}>
                                 {diff > 0 ? '↑' : diff < 0 ? '↓' : '·'}
                               </span>
@@ -1045,7 +1099,7 @@ function Dashboard() {
                   ) : (
                     <div className={cn(
                       "h-full flex flex-col items-center justify-center text-center",
-                      theme === 'modern' ? "text-white/30" : "text-slate-400"
+                      theme === 'modern' ? "text-white/55" : "text-slate-500"
                     )}>
                       <Database className="w-7 h-7 mb-2" />
                       <p className="text-xs font-medium">Awaiting Data</p>
@@ -1067,7 +1121,7 @@ function Dashboard() {
           "fixed top-1/2 -translate-y-1/2 z-40 p-2.5 rounded-l-xl border-l border-t border-b shadow-lg transition-all duration-300",
           theme === 'modern'
             ? "bg-[#0a0a14] border-white/10 text-white/60 hover:text-emerald-400 hover:bg-white/5"
-            : "bg-[#faf8f5] border-stone-200 text-slate-400 hover:text-emerald-600 hover:bg-white",
+            : "bg-[#faf8f5] border-stone-200 text-slate-500 hover:text-emerald-600 hover:bg-white",
           // Sits at the panel's left edge when open, at the viewport edge when collapsed
           inspectorCollapsed ? "right-0" : "right-80"
         )}
@@ -1097,10 +1151,13 @@ function Dashboard() {
           onAddEdge={addEdgeBetween}
           onDeleteEdge={deleteEdge}
           onUpdateEdgeWeight={updateEdgeWeightById}
+          onUpdateEdgeUncertainty={updateEdgeUncertainty}
           onFlipEdge={flipEdge}
           onClearSelection={clearSelection}
           activationFn={activationFn}
           setActivationFn={setActivationFn}
+          inferenceRule={inferenceRule}
+          setInferenceRule={setInferenceRule}
           lambda={lambda}
           setLambda={setLambda}
           maxIterations={maxIterations}

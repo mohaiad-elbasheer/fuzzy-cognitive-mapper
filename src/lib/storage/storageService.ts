@@ -254,6 +254,7 @@ class StorageService {
       source: edge.source,
       target: edge.target,
       weight: (edge.data?.weight as number) ?? 0,
+      uncertainty: (edge.data?.uncertainty as number) ?? 0,
     }));
 
     return {
@@ -284,7 +285,7 @@ class StorageService {
       source: edge.source,
       target: edge.target,
       type: 'fcm',
-      data: { weight: edge.weight },
+      data: { weight: edge.weight, uncertainty: edge.uncertainty ?? 0 },
       animated: true,
     }));
 

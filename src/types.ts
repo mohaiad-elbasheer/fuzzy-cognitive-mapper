@@ -26,10 +26,39 @@ export interface FCMEdge {
   source: string;
   target: string;
   weight: number;
+  /** Optional ± range expressing confidence in the weight (0 = exact). */
+  uncertainty?: number;
   label?: string;
 }
 
 export type ActivationFunction = 'sigmoid' | 'tanh' | 'bivalent' | 'trivalent' | 'linear';
+
+/**
+ * FCM inference rules from the literature:
+ * - kosko:          A(k+1) = f( Σ w·A(k) )                       (Kosko 1986, no self-memory)
+ * - modified-kosko: A(k+1) = f( Σ w·A(k) + A(k) )                (self-memory term)
+ * - rescaled:       A(k+1) = f( Σ w·(2A(k)−1) + (2A(k)−1) )      (Papageorgiou 2011, mitigates
+ *                   sigmoid saturation and treats 0.5 as neutral rather than positive)
+ */
+export type InferenceRule = 'kosko' | 'modified-kosko' | 'rescaled';
+
+export const INFERENCE_RULE_INFO: Record<InferenceRule, { name: string; formula: string; description: string }> = {
+  'kosko': {
+    name: 'Kosko',
+    formula: 'f( Σ w·A )',
+    description: 'Classic rule: concepts have no memory of their previous state.',
+  },
+  'modified-kosko': {
+    name: 'Modified Kosko',
+    formula: 'f( Σ w·A + A )',
+    description: 'Each concept also feeds its own previous state forward (self-memory).',
+  },
+  'rescaled': {
+    name: 'Rescaled',
+    formula: 'f( Σ w·(2A−1) + (2A−1) )',
+    description: 'Rescales activations to [−1,1] before inference; reduces sigmoid saturation and treats 0.5 as neutral.',
+  },
+};
 
 export interface SimulationResult {
   iteration: number;
@@ -165,6 +194,7 @@ export type FCMModelType = 'standard' | 'extended' | 'temporal' | 'rule-based';
 export interface FCMModelConfig {
   type: FCMModelType;
   activationFunction: ActivationFunction;
+  inferenceRule?: InferenceRule;
   lambda: number;
   maxIterations: number;
   convergenceThreshold: number;

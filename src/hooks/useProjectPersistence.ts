@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, Dispatch, SetStateAction } from 'react';
 import { Node, Edge } from '@xyflow/react';
-import { storageService, Project, ProjectConfig, createEmptyProject, generateProjectId } from '../lib/storage';
+import { storageService, Project, ProjectConfig, Scenario, createEmptyProject, generateProjectId } from '../lib/storage';
 import { toast } from '../lib/toast';
 
 export type SaveStatus = 'saved' | 'saving' | 'unsaved';
@@ -11,8 +11,11 @@ interface PersistenceArgs {
   setNodes: Dispatch<SetStateAction<Node[]>>;
   setEdges: Dispatch<SetStateAction<Edge[]>>;
   config: ProjectConfig;
+  scenarios: Scenario[];
   /** Apply a loaded project's config to the app state. */
   applyConfig: (config: ProjectConfig) => void;
+  /** Restore a loaded project's scenarios into app state. */
+  applyScenarios: (scenarios: Scenario[]) => void;
   /** Called whenever a different project becomes active (load/new/import). */
   onProjectSwitched: () => void;
 }
@@ -27,7 +30,9 @@ export function useProjectPersistence({
   setNodes,
   setEdges,
   config,
+  scenarios,
   applyConfig,
+  applyScenarios,
   onProjectSwitched,
 }: PersistenceArgs) {
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
@@ -49,6 +54,7 @@ export function useProjectPersistence({
       source: edge.source,
       target: edge.target,
       weight: (edge.data?.weight as number) ?? 0,
+      uncertainty: (edge.data?.uncertainty as number) ?? 0,
     }));
 
     if (currentProject) {
@@ -60,6 +66,7 @@ export function useProjectPersistence({
         edgeCount: projectEdges.length,
         updatedAt: now,
         config: { ...config },
+        scenarios,
       };
     }
 
@@ -74,9 +81,10 @@ export function useProjectPersistence({
       nodes: projectNodes,
       edges: projectEdges,
       config: { ...config },
-      version: 1,
+      scenarios,
+      version: 2,
     };
-  }, [nodes, edges, currentProject, config]);
+  }, [nodes, edges, currentProject, config, scenarios]);
 
   // Save current project
   const saveCurrentProject = useCallback(async (): Promise<Project | null> => {
@@ -107,10 +115,11 @@ export function useProjectPersistence({
     if (project.config) {
       applyConfig(project.config);
     }
+    applyScenarios(project.scenarios ?? []);
 
     onProjectSwitched();
     setSaveStatus('saved');
-  }, [setNodes, setEdges, applyConfig, onProjectSwitched]);
+  }, [setNodes, setEdges, applyConfig, applyScenarios, onProjectSwitched]);
 
   // Create new empty project
   const createNewProject = useCallback(() => {
@@ -182,6 +191,7 @@ export function useProjectPersistence({
   }, [
     nodes,
     edges,
+    scenarios,
     config.activationFunction,
     config.lambda,
     config.maxIterations,

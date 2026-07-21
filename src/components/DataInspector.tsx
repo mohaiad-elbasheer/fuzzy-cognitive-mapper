@@ -159,7 +159,7 @@ const DataInspector: React.FC<DataInspectorProps> = ({
             )}>Model Definition</h2>
             <p className={cn(
               "text-xs font-bold uppercase tracking-wide transition-colors duration-500",
-              theme === 'modern' ? "text-white/30" : "text-slate-400"
+              theme === 'modern' ? "text-white/55" : "text-slate-500"
             )}>
               {mode === 'view' ? 'Live JSON View' : 'Edit Mode - Modify & Import'}
             </p>
@@ -178,7 +178,7 @@ const DataInspector: React.FC<DataInspectorProps> = ({
                 "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all",
                 mode === 'view'
                   ? (theme === 'modern' ? "bg-white/10 text-emerald-400" : "bg-emerald-50 text-emerald-600")
-                  : (theme === 'modern' ? "text-white/40 hover:text-white/60" : "text-slate-400 hover:text-slate-600")
+                  : (theme === 'modern' ? "text-white/60 hover:text-white/60" : "text-slate-500 hover:text-slate-600")
               )}
             >
               <Eye className="w-3 h-3" />
@@ -190,7 +190,7 @@ const DataInspector: React.FC<DataInspectorProps> = ({
                 "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all",
                 mode === 'edit'
                   ? (theme === 'modern' ? "bg-white/10 text-emerald-400" : "bg-emerald-50 text-emerald-600")
-                  : (theme === 'modern' ? "text-white/40 hover:text-white/60" : "text-slate-400 hover:text-slate-600")
+                  : (theme === 'modern' ? "text-white/60 hover:text-white/60" : "text-slate-500 hover:text-slate-600")
               )}
             >
               <Edit3 className="w-3 h-3" />
@@ -271,7 +271,7 @@ const DataInspector: React.FC<DataInspectorProps> = ({
                 )}>
                   <span className={cn(
                     "w-8 text-right select-none transition-colors duration-500",
-                    theme === 'modern' ? "text-white/10" : "text-slate-300"
+                    theme === 'modern' ? "text-white/10" : "text-slate-500"
                   )}>{i + 1}</span>
                   <span>{line}</span>
                 </div>
@@ -301,7 +301,7 @@ const DataInspector: React.FC<DataInspectorProps> = ({
       )}>
         <p className={cn(
           "text-xs leading-relaxed",
-          theme === 'modern' ? "text-white/40" : "text-slate-500"
+          theme === 'modern' ? "text-white/60" : "text-slate-500"
         )}>
           {mode === 'view' ? (
             <>This JSON updates automatically as you modify the network. Switch to <strong>Edit</strong> mode to import a model from JSON.</>

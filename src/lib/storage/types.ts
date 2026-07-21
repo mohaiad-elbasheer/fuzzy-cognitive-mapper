@@ -3,7 +3,7 @@
  * Designed for scalability: same types work with localStorage, IndexedDB, or cloud storage
  */
 
-import { LinguisticScalePreset, MembershipFunctionType, ActivationFunction } from '../../types';
+import { LinguisticScalePreset, MembershipFunctionType, ActivationFunction, InferenceRule } from '../../types';
 
 /**
  * Project metadata - lightweight info for project listings
@@ -29,6 +29,9 @@ export interface Project extends ProjectMeta {
   
   // Configuration
   config: ProjectConfig;
+
+  // Named what-if scenarios (schema v2, optional for older projects)
+  scenarios?: Scenario[];
   
   // Simulation results (optional - can be large)
   lastSimulationResults?: SimulationSnapshot[];
@@ -58,6 +61,20 @@ export interface ProjectEdge {
   source: string;
   target: string;
   weight: number;
+  /** Optional ± confidence range on the weight (schema v2) */
+  uncertainty?: number;
+}
+
+/**
+ * A named what-if configuration: initial activations plus clamps (schema v2).
+ */
+export interface Scenario {
+  id: string;
+  name: string;
+  /** concept id -> initial activation */
+  activations: Record<string, number>;
+  clampedIds: string[];
+  createdAt: string;
 }
 
 /**
@@ -65,6 +82,8 @@ export interface ProjectEdge {
  */
 export interface ProjectConfig {
   activationFunction: ActivationFunction;
+  /** Optional for backwards compatibility with schema v1 projects */
+  inferenceRule?: InferenceRule;
   lambda: number;
   /** Optional for backwards compatibility with projects saved before v1.1 */
   maxIterations?: number;
@@ -127,7 +146,7 @@ export const DEFAULT_PROJECT_CONFIG: ProjectConfig = {
 /**
  * Current project data version (for future migrations)
  */
-export const PROJECT_VERSION = 1;
+export const PROJECT_VERSION = 2;
 
 /**
  * Generate a unique project ID

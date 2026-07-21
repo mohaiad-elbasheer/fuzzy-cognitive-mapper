@@ -5,6 +5,9 @@ import {
   GitCompare,
   Activity,
   Sliders,
+  RefreshCw,
+  Dices,
+  FlaskConical,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { SimulationRun, SimulationConfig, compareRuns, ComparisonResult } from '../lib/experiments';
@@ -17,6 +20,10 @@ import FinalStateView from './experiments/FinalStateView';
 import ComparisonView from './experiments/ComparisonView';
 import SensitivityView from './experiments/SensitivityView';
 import CentralityView from './experiments/CentralityView';
+import LoopsView from './experiments/LoopsView';
+import UncertaintyView from './experiments/UncertaintyView';
+import ScenariosView from './experiments/ScenariosView';
+import { Scenario } from '../lib/storage';
 import { ExperimentTheme } from './experiments/shared';
 
 interface ExperimentsTabProps {
@@ -24,15 +31,27 @@ interface ExperimentsTabProps {
   edges: FCMEdge[];
   /** Current simulation settings from the inspector; every new run uses these. */
   config: SimulationConfig;
+  scenarios: Scenario[];
+  onCaptureScenario: (name: string) => void;
+  onDeleteScenario: (id: string) => void;
+  onApplyScenario: (scenario: Scenario) => void;
   theme?: ExperimentTheme;
 }
 
-type AnalysisView = 'convergence' | 'finalState' | 'comparison' | 'sensitivity' | 'centrality';
+type AnalysisView =
+  | 'convergence' | 'finalState' | 'comparison'          // require a selected run
+  | 'sensitivity' | 'centrality' | 'loops' | 'uncertainty' | 'scenarios'; // model-level
+
+const RUN_VIEWS: AnalysisView[] = ['convergence', 'finalState', 'comparison'];
 
 const ExperimentsTab: React.FC<ExperimentsTabProps> = ({
   nodes,
   edges,
   config,
+  scenarios,
+  onCaptureScenario,
+  onDeleteScenario,
+  onApplyScenario,
   theme = 'modern',
 }) => {
   const [runs, setRuns] = useState<SimulationRun[]>([]);
@@ -120,6 +139,9 @@ const ExperimentsTab: React.FC<ExperimentsTabProps> = ({
     { id: 'comparison', icon: GitCompare, label: 'Compare' },
     { id: 'sensitivity', icon: Sliders, label: 'Sensitivity' },
     { id: 'centrality', icon: Activity, label: 'Centrality' },
+    { id: 'loops', icon: RefreshCw, label: 'Loops' },
+    { id: 'uncertainty', icon: Dices, label: 'Uncertainty' },
+    { id: 'scenarios', icon: FlaskConical, label: 'Scenarios' },
   ];
 
   return (
@@ -140,7 +162,7 @@ const ExperimentsTab: React.FC<ExperimentsTabProps> = ({
       <div className="flex-1 flex flex-col min-w-0">
         {/* View Tabs */}
         <div className={cn(
-          "flex items-center gap-1 p-3 border-b",
+          "flex items-center gap-1 p-3 border-b flex-wrap",
           theme === 'modern' ? "border-white/5" : "border-slate-100"
         )}>
           {viewButtons.map(({ id, icon: Icon, label }) => (
@@ -154,8 +176,8 @@ const ExperimentsTab: React.FC<ExperimentsTabProps> = ({
                       ? "bg-white/10 text-emerald-400"
                       : "bg-emerald-50 text-emerald-700")
                   : (theme === 'modern'
-                      ? "text-white/40 hover:text-white/60 hover:bg-white/5"
-                      : "text-slate-400 hover:text-slate-600 hover:bg-slate-50")
+                      ? "text-white/60 hover:text-white/60 hover:bg-white/5"
+                      : "text-slate-500 hover:text-slate-600 hover:bg-slate-50")
               )}
             >
               <Icon className="w-4 h-4" />
@@ -177,10 +199,10 @@ const ExperimentsTab: React.FC<ExperimentsTabProps> = ({
 
         {/* Analysis Content */}
         <div className="flex-1 overflow-auto p-4">
-          {selectedRuns.length === 0 ? (
+          {RUN_VIEWS.includes(activeView) && selectedRuns.length === 0 ? (
             <div className={cn(
               "h-full flex flex-col items-center justify-center",
-              theme === 'modern' ? "text-white/30" : "text-slate-400"
+              theme === 'modern' ? "text-white/55" : "text-slate-500"
             )}>
               <BarChart3 className="w-16 h-16 mb-4 opacity-30" />
               <p className="text-lg font-medium">Select a simulation run to analyze</p>
@@ -206,6 +228,24 @@ const ExperimentsTab: React.FC<ExperimentsTabProps> = ({
               )}
               {activeView === 'centrality' && (
                 <CentralityView nodes={nodes} edges={edges} theme={theme} />
+              )}
+              {activeView === 'loops' && (
+                <LoopsView nodes={nodes} edges={edges} theme={theme} />
+              )}
+              {activeView === 'uncertainty' && (
+                <UncertaintyView nodes={nodes} edges={edges} config={config} theme={theme} />
+              )}
+              {activeView === 'scenarios' && (
+                <ScenariosView
+                  nodes={nodes}
+                  edges={edges}
+                  config={config}
+                  scenarios={scenarios}
+                  onCaptureScenario={onCaptureScenario}
+                  onDeleteScenario={onDeleteScenario}
+                  onApplyScenario={onApplyScenario}
+                  theme={theme}
+                />
               )}
             </>
           )}

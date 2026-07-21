@@ -88,7 +88,7 @@ const ConvergenceView: React.FC<ConvergenceViewProps> = ({ run, theme }) => {
         {run.finalState.length > 10 && (
           <p className={cn(
             "text-xs mt-2 text-center",
-            theme === 'modern' ? "text-white/30" : "text-slate-400"
+            theme === 'modern' ? "text-white/55" : "text-slate-500"
           )}>
             Showing first 10 concepts. Total: {run.finalState.length}
           </p>
@@ -106,13 +106,14 @@ const ConvergenceView: React.FC<ConvergenceViewProps> = ({ run, theme }) => {
             { label: 'Iterations', value: String(run.iterations) },
             { label: 'Concepts', value: String(run.finalState.length) },
             { label: 'Activation Fn', value: run.config.activationFunction, capitalize: true },
+            { label: 'Rule', value: run.config.inferenceRule ?? 'modified-kosko' },
             { label: 'Lambda λ', value: String(run.config.lambda) },
             { label: 'Max Iterations', value: String(run.config.maxIterations) },
             { label: 'Convergence ε', value: run.config.convergenceThreshold.toExponential(0) },
             { label: 'Clamped', value: clampedLabels.length > 0 ? `${clampedLabels.length}` : 'None' },
           ].map(({ label, value, className, capitalize }) => (
             <div key={label}>
-              <p className={cn("text-xs uppercase tracking-wider", theme === 'modern' ? "text-white/40" : "text-slate-400")}>
+              <p className={cn("text-xs uppercase tracking-wider", theme === 'modern' ? "text-white/60" : "text-slate-500")}>
                 {label}
               </p>
               <p className={cn(
@@ -126,7 +127,7 @@ const ConvergenceView: React.FC<ConvergenceViewProps> = ({ run, theme }) => {
           ))}
         </div>
         {clampedLabels.length > 0 && (
-          <p className={cn("text-xs mt-3", theme === 'modern' ? "text-white/40" : "text-slate-400")}>
+          <p className={cn("text-xs mt-3", theme === 'modern' ? "text-white/60" : "text-slate-500")}>
             Clamped concepts: {clampedLabels.join(', ')}
           </p>
         )}

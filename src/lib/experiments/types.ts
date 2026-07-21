@@ -2,7 +2,7 @@
  * Experiment Types - Data models for simulation runs and analysis
  */
 
-import { FCMNode, FCMEdge, ActivationFunction } from '../../types';
+import { FCMNode, FCMEdge, ActivationFunction, InferenceRule } from '../../types';
 
 /**
  * A single simulation run with full history
@@ -31,6 +31,11 @@ export interface SimulationRun {
   
   // Optional: clamped/input concepts for scenario mode
   clampedConcepts?: string[];
+
+  // Reproducibility metadata: the exact weight matrix used and the app
+  // version that produced the run
+  weights?: { source: string; target: string; weight: number }[];
+  appVersion?: string;
 }
 
 /**
@@ -38,6 +43,7 @@ export interface SimulationRun {
  */
 export interface SimulationConfig {
   activationFunction: ActivationFunction;
+  inferenceRule?: InferenceRule;
   lambda: number;
   maxIterations: number;
   convergenceThreshold: number;

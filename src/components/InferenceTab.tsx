@@ -59,7 +59,7 @@ const InferenceTab: React.FC<InferenceTabProps> = ({ nodes, edges, results, them
           "w-16 h-16 rounded-2xl flex items-center justify-center mb-6 border transition-colors duration-500",
           theme === 'modern' ? "bg-white/5 border-white/10" : "bg-slate-50 border-slate-200"
         )}>
-          <Brain className={cn("w-8 h-8", theme === 'modern' ? "text-white/20" : "text-slate-300")} />
+          <Brain className={cn("w-8 h-8", theme === 'modern' ? "text-white/60" : "text-slate-500")} />
         </div>
         <h2 className={cn(
           "text-xl font-bold uppercase tracking-tight mb-2 transition-colors duration-500",
@@ -67,7 +67,7 @@ const InferenceTab: React.FC<InferenceTabProps> = ({ nodes, edges, results, them
         )}>Inference Engine Idle</h2>
         <p className={cn(
           "text-xs font-bold uppercase tracking-wide max-w-md leading-relaxed transition-colors duration-500",
-          theme === 'modern' ? "text-white/30" : "text-slate-400"
+          theme === 'modern' ? "text-white/55" : "text-slate-500"
         )}>
           Run a simulation to generate a semantic analysis of your causal model's behavior and equilibrium.
         </p>
@@ -106,7 +106,7 @@ const InferenceTab: React.FC<InferenceTabProps> = ({ nodes, edges, results, them
             )}>Inference Report</h2>
             <p className={cn(
               "text-xs font-bold uppercase tracking-wide transition-colors duration-500",
-              theme === 'modern' ? "text-white/30" : "text-slate-400"
+              theme === 'modern' ? "text-white/55" : "text-slate-500"
             )}>Semantic Decision Support</p>
           </div>
         </div>
@@ -129,7 +129,7 @@ const InferenceTab: React.FC<InferenceTabProps> = ({ nodes, edges, results, them
         <div className="space-y-6">
           <h3 className={cn(
             "text-xs font-bold uppercase tracking-wide flex items-center gap-2 transition-colors duration-500",
-            theme === 'modern' ? "text-white/40" : "text-slate-500"
+            theme === 'modern' ? "text-white/60" : "text-slate-500"
           )}>
             <Target className="w-3 h-3" />
             Concept Equilibrium Shifts
@@ -150,7 +150,7 @@ const InferenceTab: React.FC<InferenceTabProps> = ({ nodes, edges, results, them
                     "flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors duration-500",
                     node.trend === 'up' ? (theme === 'modern' ? "text-emerald-400 bg-emerald-500/10" : "text-emerald-700 bg-emerald-100") :
                     node.trend === 'down' ? (theme === 'modern' ? "text-red-400 bg-red-500/10" : "text-red-700 bg-red-100") :
-                    (theme === 'modern' ? "text-white/40 bg-white/5" : "text-slate-400 bg-slate-200")
+                    (theme === 'modern' ? "text-white/60 bg-white/5" : "text-slate-500 bg-slate-200")
                   )}>
                     {node.trend === 'up' ? <TrendingUp className="w-3 h-3" /> :
                      node.trend === 'down' ? <TrendingDown className="w-3 h-3" /> :
@@ -163,7 +163,7 @@ const InferenceTab: React.FC<InferenceTabProps> = ({ nodes, edges, results, them
                   <div className="flex-1 space-y-2">
                     <div className={cn(
                       "flex justify-between text-xs font-bold uppercase tracking-wide transition-colors duration-500",
-                      theme === 'modern' ? "text-white/20" : "text-slate-400"
+                      theme === 'modern' ? "text-white/60" : "text-slate-500"
                     )}>
                       <span>Initial: {node.start.toFixed(2)}</span>
                       <span>Final: {node.end.toFixed(2)}</span>
@@ -195,7 +195,7 @@ const InferenceTab: React.FC<InferenceTabProps> = ({ nodes, edges, results, them
                       "text-lg font-bold tracking-tight transition-colors duration-500",
                       node.trend === 'up' ? (theme === 'modern' ? "text-emerald-400" : "text-emerald-700") :
                       node.trend === 'down' ? (theme === 'modern' ? "text-red-400" : "text-red-700") :
-                      (theme === 'modern' ? "text-white/40" : "text-slate-400")
+                      (theme === 'modern' ? "text-white/60" : "text-slate-500")
                     )}>
                       {node.diff > 0 ? '+' : ''}{node.percentChange.toFixed(0)}%
                     </span>
@@ -210,7 +210,7 @@ const InferenceTab: React.FC<InferenceTabProps> = ({ nodes, edges, results, them
         <div className="space-y-6">
           <h3 className={cn(
             "text-xs font-bold uppercase tracking-wide flex items-center gap-2 transition-colors duration-500",
-            theme === 'modern' ? "text-white/40" : "text-slate-500"
+            theme === 'modern' ? "text-white/60" : "text-slate-500"
           )}>
             <Info className="w-3 h-3" />
             Causal Drivers & Bottlenecks
@@ -245,7 +245,7 @@ const InferenceTab: React.FC<InferenceTabProps> = ({ nodes, edges, results, them
                     )}>
                       <div className={cn(
                         "w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold transition-colors duration-500",
-                        theme === 'modern' ? "bg-white/5 text-white/20" : "bg-slate-50 text-slate-400"
+                        theme === 'modern' ? "bg-white/5 text-white/60" : "bg-slate-50 text-slate-500"
                       )}>
                         0{i + 1}
                       </div>
@@ -254,11 +254,11 @@ const InferenceTab: React.FC<InferenceTabProps> = ({ nodes, edges, results, them
                           "text-xs font-bold uppercase tracking-wider mb-1 transition-colors duration-500",
                           theme === 'modern' ? "text-white/80" : "text-slate-800"
                         )}>
-                          {source?.label} <span className={cn("mx-1", theme === 'modern' ? "text-white/20" : "text-slate-300")}>→</span> {target?.label}
+                          {source?.label} <span className={cn("mx-1", theme === 'modern' ? "text-white/60" : "text-slate-500")}>→</span> {target?.label}
                         </p>
                         <p className={cn(
                           "text-xs leading-relaxed transition-colors duration-500",
-                          theme === 'modern' ? "text-white/40" : "text-slate-500"
+                          theme === 'modern' ? "text-white/60" : "text-slate-500"
                         )}>
                           Has a <span className={cn("font-bold", edge.weight > 0 ? (theme === 'modern' ? "text-emerald-400" : "text-emerald-700") : (theme === 'modern' ? "text-red-400" : "text-red-700"))}>
                             {getLinguisticWeight(edge.weight)}
@@ -284,7 +284,7 @@ const InferenceTab: React.FC<InferenceTabProps> = ({ nodes, edges, results, them
               </h4>
               <p className={cn(
                 "text-xs italic leading-relaxed transition-colors duration-500",
-                theme === 'modern' ? "text-white/50" : "text-slate-600"
+                theme === 'modern' ? "text-white/60" : "text-slate-600"
               )}>
                 {analysis.nodeChanges.some(n => n.trend === 'down') ? (
                   <>
